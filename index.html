@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Предельная стоимость строительства</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #1a1a1a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+        }
+        .container {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: #1a1a1a;
+        }
+        .subtitle {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 32px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+            outline: none;
+        }
+        input:focus, select:focus {
+            border-color: #4a7cff;
+        }
+        .row {
+            display: flex;
+            gap: 12px;
+        }
+        .row .form-group {
+            flex: 1;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #4a7cff;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 8px;
+        }
+        button:hover { background: #3a6ae8; }
+        button:active { background: #2d5ad4; }
+
+        .result {
+            display: none;
+            margin-top: 28px;
+            padding: 24px;
+            background: #f8fafe;
+            border-radius: 12px;
+            border: 1px solid #e0eaff;
+        }
+        .result-row {
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e8eef5;
+        }
+        .result-row:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        .result-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .result-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+        .result-value.highlight {
+            color: #4a7cff;
+            font-size: 22px;
+        }
+        .index-detail {
+            font-size: 13px;
+            color: #888;
+            margin-top: 4px;
+            word-break: break-all;
+        }
+        .error {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 12px;
+            display: none;
+        }
+        .source {
+            margin-top: 24px;
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+        }
+        .source a { color: #4a7cff; text-decoration: none; }
+        .source a:hover { text-decoration: underline; }
+
+        /* Mobile adaptations */
+        @media (max-width: 480px) {
+            body { padding: 0; }
+            .container {
+                border-radius: 0;
+                padding: 24px 16px;
+                box-shadow: none;
+                min-height: 100vh;
+            }
+            h1 { font-size: 20px; }
+            .row { flex-direction: column; gap: 0; }
+            input, select {
+                font-size: 18px;
+                padding: 14px 16px;
+            }
+            button {
+                font-size: 18px;
+                padding: 16px;
+                margin-top: 12px;
+            }
+            .result { padding: 16px; }
+            .result-value { font-size: 16px; }
+            .result-value.highlight { font-size: 20px; }
+            .index-detail { font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Предельная стоимость строительства</h1>
+        <p class="subtitle">Приведение сметной стоимости к 01.01.2025 по индексам СМР</p>
+
+        <div class="form-group">
+            <label>Стоимость строительства (руб.)</label>
+            <input type="text" id="cost" placeholder="Например: 1 500 000" inputmode="decimal">
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>Месяц сметы</label>
+                <select id="month">
+                    <option value="1">Январь</option>
+                    <option value="2">Февраль</option>
+                    <option value="3">Март</option>
+                    <option value="4">Апрель</option>
+                    <option value="5">Май</option>
+                    <option value="6">Июнь</option>
+                    <option value="7">Июль</option>
+                    <option value="8">Август</option>
+                    <option value="9">Сентябрь</option>
+                    <option value="10" selected>Октябрь</option>
+                    <option value="11">Ноябрь</option>
+                    <option value="12">Декабрь</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Год сметы</label>
+                <select id="year"></select>
+            </div>
+        </div>
+
+        <button onclick="calculate()">Рассчитать</button>
+
+        <div class="error" id="error"></div>
+
+        <div class="result" id="result">
+            <div class="result-row">
+                <div class="result-label" id="costLabel"></div>
+                <div class="result-value" id="costValue"></div>
+            </div>
+            <div class="result-row">
+                <div class="result-label" id="indexLabel"></div>
+                <div class="result-value" id="indexValue"></div>
+                <div class="index-detail" id="indexDetail"></div>
+            </div>
+            <div class="result-row">
+                <div class="result-label" id="finalLabel"></div>
+                <div class="result-value highlight" id="finalValue"></div>
+            </div>
+        </div>
+
+        <div class="source">
+            Источник индексов: <a href="https://snzt.by/spravka.php?doc_id=003" target="_blank">snzt.by</a>
+        </div>
+    </div>
+
+    <script>
+    // СМР к предыдущему месяцу (индексы в %)
+    // Ключ: "YYYY-MM", значение: индекс
+    const SMR = {
+        "2026-01": 104.6, "2026-02": 92.3, "2026-03": 101.4,
+        "2025-01": 104.5, "2025-02": 94.9, "2025-03": 101.6,
+        "2025-04": 104.0, "2025-05": 101.5, "2025-06": 102.4,
+        "2025-07": 101.9, "2025-08": 101.3, "2025-09": 102.0,
+        "2025-10": 100.1, "2025-11": 100.6, "2025-12": 97.8,
+        "2024-01": 103.2, "2024-02": 96.1, "2024-03": 100.7,
+        "2024-04": 102.7, "2024-05": 102.8, "2024-06": 101.3,
+        "2024-07": 102.5, "2024-08": 102.2, "2024-09": 102.5,
+        "2024-10": 98.3, "2024-11": 101.8, "2024-12": 98.9,
+        "2023-01": 102.1, "2023-02": 95.8, "2023-03": 99.9,
+        "2023-04": 102.3, "2023-05": 99.8, "2023-06": 103.2,
+        "2023-07": 102.4, "2023-08": 101.1, "2023-09": 102.8,
+        "2023-10": 99.4, "2023-11": 101.7, "2023-12": 99.4,
+        "2022-01": 104.4, "2022-02": 94.2, "2022-03": 102.7,
+        "2022-04": 103.5, "2022-05": 102.5, "2022-06": 100.5,
+        "2022-07": 103.6, "2022-08": 100.7, "2022-09": 102.9,
+        "2022-10": 99.2, "2022-11": 99.9, "2022-12": 100.3,
+        "2021-01": 104.6, "2021-02": 92.1, "2021-03": 101.8,
+        "2021-04": 104.8, "2021-05": 103.2, "2021-06": 102.6,
+        "2021-07": 104.2, "2021-08": 102.5, "2021-09": 101.2,
+        "2021-10": 98.0, "2021-11": 101.5, "2021-12": 100.3,
+        "2020-01": 103.2, "2020-02": 94.8, "2020-03": 101.1,
+        "2020-04": 102.6, "2020-05": 100.3, "2020-06": 101.2,
+        "2020-07": 102.7, "2020-08": 101.4, "2020-09": 100.1,
+        "2020-10": 100.1, "2020-11": 100.1, "2020-12": 99.9,
+        "2019-01": 102.7, "2019-02": 95.2, "2019-03": 100.9,
+        "2019-04": 105.3, "2019-05": 102.8, "2019-06": 100.9,
+        "2019-07": 101.1, "2019-08": 101.5, "2019-09": 102.3,
+        "2019-10": 99.1, "2019-11": 101.2, "2019-12": 98.7,
+        "2018-01": 104.9, "2018-02": 94.3, "2018-03": 99.9,
+        "2018-04": 103.5, "2018-05": 101.5, "2018-06": 103.0,
+        "2018-07": 101.9, "2018-08": 100.4, "2018-09": 103.1,
+        "2018-10": 98.6, "2018-11": 102.0, "2018-12": 99.5,
+        "2017-01": 102.1, "2017-02": 96.9, "2017-03": 100.1,
+        "2017-04": 103.0, "2017-05": 100.9, "2017-06": 101.8,
+        "2017-07": 102.2, "2017-08": 100.3, "2017-09": 102.0,
+        "2017-10": 100.3, "2017-11": 100.6, "2017-12": 99.3,
+        "2016-01": 102.7, "2016-02": 92.2, "2016-03": 100.9,
+        "2016-04": 102.0, "2016-05": 101.8, "2016-06": 100.9,
+        "2016-07": 103.2, "2016-08": 100.8, "2016-09": 102.2,
+        "2016-10": 99.0, "2016-11": 99.3, "2016-12": 98.7,
+        "2015-01": 103.4, "2015-02": 91.7, "2015-03": 100.0,
+        "2015-04": 102.8, "2015-05": 101.3, "2015-06": 101.2,
+        "2015-07": 103.0, "2015-08": 100.6, "2015-09": 101.2,
+        "2015-10": 100.19, "2015-11": 99.81, "2015-12": 98.57,
+        "2014-01": 102.6, "2014-02": 94.2, "2014-03": 101.5,
+        "2014-04": 106.6, "2014-05": 102.1, "2014-06": 102.8,
+        "2014-07": 101.8, "2014-08": 99.3, "2014-09": 101.1,
+        "2014-10": 99.4, "2014-11": 100.8, "2014-12": 96.4,
+        "2013-01": 102.1, "2013-02": 98.6, "2013-03": 102.1,
+        "2013-04": 104.2, "2013-05": 104.2, "2013-06": 102.1,
+        "2013-07": 104.0, "2013-08": 102.2, "2013-09": 103.7,
+        "2013-10": 98.2, "2013-11": 101.9, "2013-12": 97.3,
+    };
+
+    const MONTHS_RU = [
+        "", "январь", "февраль", "март", "апрель", "май", "июнь",
+        "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"
+    ];
+
+    // Populate year selector
+    const yearSel = document.getElementById("year");
+    const years = [...new Set(Object.keys(SMR).map(k => parseInt(k.split("-")[0])))].sort((a, b) => b - a);
+    years.forEach(y => {
+        const opt = document.createElement("option");
+        opt.value = y;
+        opt.textContent = y;
+        if (y === 2024) opt.selected = true;
+        yearSel.appendChild(opt);
+    });
+
+    // Format number with spaces as thousand separator
+    function fmt(n) {
+        return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Parse cost input (allow spaces, commas)
+    function parseCost(s) {
+        return parseFloat(s.replace(/\s/g, "").replace(",", "."));
+    }
+
+    // Format cost input on blur
+    document.getElementById("cost").addEventListener("blur", function() {
+        const v = parseCost(this.value);
+        if (!isNaN(v) && v > 0) {
+            this.value = fmt(v);
+        }
+    });
+
+    function calculate() {
+        const errEl = document.getElementById("error");
+        const resEl = document.getElementById("result");
+        errEl.style.display = "none";
+        resEl.style.display = "none";
+
+        const cost = parseCost(document.getElementById("cost").value);
+        const month = parseInt(document.getElementById("month").value);
+        const year = parseInt(document.getElementById("year").value);
+
+        if (isNaN(cost) || cost <= 0) {
+            errEl.textContent = "Введите корректную стоимость";
+            errEl.style.display = "block";
+            return;
+        }
+
+        // Target date: 01.01.2025 (meaning prices as of end of Dec 2024)
+        const targetYear = 2025;
+        const targetMonth = 1; // January 2025
+
+        // Determine which indices to multiply
+        // Index for month M means: price change FROM (M-1) TO M
+        // So index for "январь 2025" = change from Dec 2024 to Jan 2025
+
+        let indices = [];
+        let indexKeys = [];
+        let isBefore;
+
+        if (year < targetYear || (year === targetYear && month === 1)) {
+            // Estimate is ON or BEFORE 01.01.2025
+            // Need indices from (month+1) of estimate year through Dec of (targetYear-1)
+            // i.e., from the month AFTER the estimate through December 2024
+            isBefore = true;
+
+            if (year === targetYear && month === 1) {
+                // Estimate is exactly January 2025 = at 01.01.2025, no conversion needed
+                indices = [];
+            } else {
+                // Start from the month after the estimate month
+                let m = month + 1;
+                let y = year;
+                if (m > 12) { m = 1; y++; }
+
+                // Go through to December 2024
+                while (y < targetYear || (y === targetYear && m === 0)) {
+                    if (y >= targetYear) break;
+                    const key = `${y}-${String(m).padStart(2, "0")}`;
+                    if (!(key in SMR)) {
+                        errEl.textContent = `Нет данных за ${MONTHS_RU[m]} ${y}`;
+                        errEl.style.display = "block";
+                        return;
+                    }
+                    indices.push(SMR[key] / 100);
+                    indexKeys.push({ key, value: SMR[key], label: `${MONTHS_RU[m]} ${y}` });
+                    m++;
+                    if (m > 12) { m = 1; y++; }
+                }
+            }
+        } else {
+            // Estimate is AFTER 01.01.2025
+            isBefore = false;
+
+            // Need indices from January 2025 through (month-1) of estimate year
+            // These represent price changes AFTER 01.01.2025
+            let m = 1;
+            let y = targetYear;
+
+            while (y < year || (y === year && m < month)) {
+                const key = `${y}-${String(m).padStart(2, "0")}`;
+                if (!(key in SMR)) {
+                    errEl.textContent = `Нет данных за ${MONTHS_RU[m]} ${y}`;
+                    errEl.style.display = "block";
+                    return;
+                }
+                indices.push(SMR[key] / 100);
+                indexKeys.push({ key, value: SMR[key], label: `${MONTHS_RU[m]} ${y}` });
+                m++;
+                if (m > 12) { m = 1; y++; }
+            }
+        }
+
+        // Calculate factual index (product of all monthly indices)
+        let factIndex = 1;
+        indices.forEach(i => factIndex *= i);
+
+        // Calculate final cost
+        let finalCost;
+        if (indices.length === 0) {
+            // No conversion needed (estimate is at 01.01.2025)
+            finalCost = cost;
+            factIndex = 1;
+        } else if (isBefore) {
+            finalCost = cost * factIndex;
+        } else {
+            finalCost = cost / factIndex;
+        }
+
+        // Display results
+        const dateStr = `${MONTHS_RU[month]} ${year}`;
+        const operation = isBefore ? "умножение" : "деление";
+
+        document.getElementById("costLabel").textContent =
+            `Стоимость на ${dateStr} г.`;
+        document.getElementById("costValue").textContent =
+            `${fmt(cost)} руб.`;
+
+        if (indices.length === 0) {
+            document.getElementById("indexLabel").textContent =
+                "Фактический индекс";
+            document.getElementById("indexValue").textContent =
+                "Пересчёт не требуется (смета на 01.01.2025)";
+            document.getElementById("indexDetail").textContent = "";
+        } else {
+            const direction = isBefore
+                ? `с ${dateStr} на 01.01.2025`
+                : `с 01.01.2025 на ${dateStr}`;
+            document.getElementById("indexLabel").textContent =
+                `Фактический индекс изменения стоимости ${direction}`;
+
+            const valuesStr = indexKeys.map(k => k.value.toFixed(2) + "%").join(" x ");
+            document.getElementById("indexValue").textContent =
+                factIndex.toFixed(6);
+            document.getElementById("indexDetail").textContent =
+                indexKeys.map(k => `${k.label}: ${k.value}%`).join(" x ") +
+                ` = ${factIndex.toFixed(6)} (${operation})`;
+        }
+
+        document.getElementById("finalLabel").textContent =
+            "Предельная стоимость строительства на 01.01.2025";
+        document.getElementById("finalValue").textContent =
+            `${fmt(finalCost)} руб.`;
+
+        resEl.style.display = "block";
+    }
+    </script>
+</body>
+</html>
