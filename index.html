@@ -849,6 +849,12 @@
                 }
             });
 
+            // Insert area inputs right after group 5
+            if (group.group === "5. Работы по контролю строительных работ:") {
+                const areaEl = document.getElementById("nztAreaInputs");
+                if (areaEl) groupDiv.appendChild(areaEl);
+            }
+
             container.appendChild(groupDiv);
         });
     }
