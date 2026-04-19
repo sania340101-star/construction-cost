@@ -764,10 +764,11 @@
             xMax: xMax,
             hor: hor,
             nzt: nzt,
-            detail: lower.id + ": Х_мин=" + fmt(xMin, 2) + ", НЗТ_мин=" + fmt(nztMin, 2) + "\n" +
-                    upper.id + ": Х_макс=" + fmt(xMax, 2) + ", НЗТ_макс=" + fmt(nztMax, 2) + "\n" +
-                    "Формула: " + fmt(nztMin, 2) + " + (" + fmt(nztMax, 2) + " - " + fmt(nztMin, 2) + ") / (" +
-                    fmt(xMax, 2) + " - " + fmt(xMin, 2) + ") \u00d7 (" + fmt(hor, 2) + " - " + fmt(xMin, 2) + ") = " + fmt(nzt, 2)
+            detail: lower.id + ": Хмин = " + fmt(xMin, 2) + ", НЗТмин = " + fmt(nztMin, 2) + "\n" +
+                    upper.id + ": Хмакс = " + fmt(xMax, 2) + ", НЗТмакс = " + fmt(nztMax, 2) + "\n\n" +
+                    "Формула: НЗТ = НЗТмин + (НЗТмакс \u2212 НЗТмин) / (Хмакс \u2212 Хмин) \u00d7 (Хор \u2212 Хмин)\n" +
+                    "Расчёт: " + fmt(nztMin, 2) + " + (" + fmt(nztMax, 2) + " \u2212 " + fmt(nztMin, 2) + ") / (" +
+                    fmt(xMax, 2) + " \u2212 " + fmt(xMin, 2) + ") \u00d7 (" + fmt(hor, 2) + " \u2212 " + fmt(xMin, 2) + ") = " + fmt(nzt, 2)
         };
     }
 
