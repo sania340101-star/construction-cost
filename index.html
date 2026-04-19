@@ -2142,16 +2142,9 @@
             return;
         }
 
-        // Effective end month: day=1 → don't include that month
+        // End month always included (regardless of day)
         let effectiveEndMonth = endDate.month;
         let effectiveEndYear = endDate.year;
-        if (endDate.day === 1) {
-            effectiveEndMonth = endDate.month - 1;
-            if (effectiveEndMonth === 0) {
-                effectiveEndMonth = 12;
-                effectiveEndYear = endDate.year - 1;
-            }
-        }
 
         const result = calculateIusluga(startDate.year, startDate.month, effectiveEndYear, effectiveEndMonth);
         resultDiv.style.display = "block";
@@ -2168,9 +2161,6 @@
             let detailHtml = "(Прогнозные индексы цен строительства для прочих затрат)<br>";
             detailHtml += "Расчёт: " + indexParts.join(" × ") + " = " + result.value.toFixed(4);
             detailHtml += " (" + monthParts.join(", ") + ")<br>";
-            if (endDate.day === 1) {
-                detailHtml += "<em>Индекс за " + MONTHS_RU_SHORT[endDate.month] + " не включён (1-е число)</em><br>";
-            }
             detailHtml += "Письмо МАиС от 21.03.2025 №04.3-05/4106";
             document.getElementById("iuslugaDetail").innerHTML = detailHtml;
         }
