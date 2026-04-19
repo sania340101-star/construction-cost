@@ -562,7 +562,7 @@
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 </head>
 <body>
     <!-- Login Screen -->
@@ -2431,6 +2431,36 @@
     function exportToExcel() {
         const wb = XLSX.utils.book_new();
 
+        // Styles matching the original document (Times New Roman 12/14)
+        const fontHdr = { name: "Times New Roman", sz: 14 };
+        const fontTbl = { name: "Times New Roman", sz: 12 };
+        const fontBold = { name: "Times New Roman", sz: 12, bold: true };
+        const fontBoldLg = { name: "Times New Roman", sz: 14, bold: true };
+        const borderAll = {
+            top: { style: "thin" }, bottom: { style: "thin" },
+            left: { style: "thin" }, right: { style: "thin" }
+        };
+        const alignCC = { horizontal: "center", vertical: "center", wrapText: true };
+        const alignLC = { horizontal: "left", vertical: "center", wrapText: true };
+        const alignCT = { horizontal: "center", vertical: "top", wrapText: true };
+        const alignLT = { horizontal: "left", vertical: "top", wrapText: true };
+
+        // Cell style helpers
+        function hdrCell(v) { return { v: v, t: "s", s: { font: fontHdr } }; }
+        function tblCell(v, opts) {
+            const s = { font: fontTbl, border: borderAll, alignment: alignLC };
+            if (opts) Object.assign(s, opts);
+            return { v: v, t: typeof v === "number" ? "n" : "s", s: s };
+        }
+        function tblCellBold(v, opts) {
+            const s = { font: fontBold, border: borderAll, alignment: alignCC };
+            if (opts) Object.assign(s, opts);
+            return { v: v, t: typeof v === "number" ? "n" : "s", s: s };
+        }
+        function emptyBorder() {
+            return { v: "", t: "s", s: { font: fontTbl, border: borderAll } };
+        }
+
         // Gather data
         const costLabel = document.getElementById("costLabel").textContent;
         const costValue = document.getElementById("costValue").textContent;
@@ -2441,11 +2471,11 @@
         const finalValue = document.getElementById("finalValue").textContent;
 
         const horValue = parseFormatted(finalValue);
-        const sustValue = parseFormatted(document.getElementById("sustValue").textContent);
+        const sustVal = parseFormatted(document.getElementById("sustValue").textContent);
         const sustDetail = document.getElementById("sustDetail").textContent.replace(/<br\/?>/g, " ");
 
         const iuslugaEl = document.getElementById("iuslugaValue");
-        const iuslugaValue = iuslugaEl ? parseFormatted(iuslugaEl.textContent) : 1;
+        const iuslugaVal = iuslugaEl ? parseFormatted(iuslugaEl.textContent) : 1;
         const iuslugaDetailEl = document.getElementById("iuslugaDetail");
         const iuslugaDetail = iuslugaDetailEl ? iuslugaDetailEl.textContent : "";
 
@@ -2453,7 +2483,7 @@
 
         const cpredlEl = document.getElementById("cpredlValue");
         const cpredl = cpredlEl ? parseFormatted(cpredlEl.textContent) : 0;
-        const cpredlFormula = document.getElementById("cpredlFormula").textContent;
+        const cpredlCalcText = document.getElementById("cpredlCalc").textContent;
 
         const taxType = document.querySelector('input[name="taxType"]:checked').value;
         const finalPriceEl = document.getElementById("finalPriceValue");
@@ -2466,7 +2496,6 @@
         checked.forEach(cb => {
             const nztId = cb.dataset.nztId;
             const label = cb.parentElement.textContent.trim();
-            // Find the result value from rendered results
             const resultEls = document.querySelectorAll(".nzt-result-item");
             let nztVal = 0;
             resultEls.forEach(el => {
@@ -2480,153 +2509,249 @@
         });
 
         const totalNzt = parseFormatted(document.getElementById("nztTotalValue").textContent);
+        const smrCost = parseFormatted(costValue);
+        const factIndex = parseFloat(indexValue) || 1;
 
-        // Build worksheet data
-        const data = [];
+        // Build worksheet
+        const ws = {};
         const merges = [];
+        const rows = []; // row height tracking
         let r = 0;
 
-        // Row 0: УТВЕРЖДАЮ (right-aligned via merge)
-        data.push(["", "", "", "", "", "УТВЕРЖДАЮ"]);
-        r++;
-        data.push(["", "", "", "", "", "Директор"]);
-        r++;
-        data.push(["", "", "", "", "", ""]);
-        r++;
-        data.push(["", "", "", "", "", "______________ ______________"]);
-        r++;
-        data.push(["", "", "", "", "", "\" ____ \" __________  " + new Date().getFullYear() + " г."]);
-        r++;
-        data.push([]); // blank
-        r++;
+        function setCell(row, col, cellObj) {
+            const ref = XLSX.utils.encode_cell({ r: row, c: col });
+            ws[ref] = cellObj;
+        }
 
-        // Title row (merged A-F)
+        // Rows 0-4: Header block (УТВЕРЖДАЮ)
+        const rightAlign = { font: fontHdr, alignment: { horizontal: "left" } };
+        setCell(0, 0, { v: "", t: "s", s: { font: fontHdr } });
+        merges.push({ s: {r:0,c:0}, e: {r:0,c:5} });
+        rows[0] = { hpt: 19 };
+
+        setCell(1, 0, { v: "", t: "s", s: { font: fontHdr } });
+        merges.push({ s: {r:1,c:0}, e: {r:1,c:5} });
+        rows[1] = { hpt: 19 };
+
+        setCell(2, 0, { v: "", t: "s", s: { font: fontHdr } });
+        merges.push({ s: {r:2,c:0}, e: {r:2,c:5} });
+        rows[2] = { hpt: 18 };
+
+        setCell(3, 0, { v: "", t: "s", s: { font: fontHdr } });
+        merges.push({ s: {r:3,c:0}, e: {r:3,c:5} });
+        rows[3] = { hpt: 19 };
+
+        setCell(4, 0, { v: "", t: "s", s: { font: fontHdr } });
+        merges.push({ s: {r:4,c:0}, e: {r:4,c:5} });
+        rows[4] = { hpt: 19 };
+
+        // Row 5: blank
+        setCell(5, 0, { v: "", t: "s", s: { font: fontHdr } });
+        merges.push({ s: {r:5,c:0}, e: {r:5,c:5} });
+        rows[5] = { hpt: 19 };
+
+        // Row 6: Title
         const objectName = prompt("Название объекта строительства:") || "объект строительства";
-        data.push(["Расчет\nстоимости инженерных услуг по техническому надзору на объекте: «" + objectName + "»"]);
-        merges.push({ s: { r: r, c: 0 }, e: { r: r, c: 5 } });
-        r++;
-        data.push([]); // blank
+        setCell(6, 0, { v: "Расчет\nстоимости инженерных услуг по техническому надзору на объекте: «" + objectName + "»",
+            t: "s", s: { font: fontHdr, alignment: { horizontal: "center", vertical: "center", wrapText: true } } });
+        merges.push({ s: {r:6,c:0}, e: {r:6,c:5} });
+        rows[6] = { hpt: 57 };
+
+        // Row 7: blank
+        setCell(7, 0, { v: "", t: "s" });
+        merges.push({ s: {r:7,c:0}, e: {r:7,c:2} });
+        rows[7] = { hpt: 19 };
+
+        r = 8; // Table starts at row 8
+
+        // Row 8: Table header
+        setCell(r, 0, tblCell("Показатель", { alignment: alignCC }));
+        setCell(r, 1, tblCell("Единица измерения", { alignment: alignCC }));
+        setCell(r, 2, tblCell("Обоснование", { alignment: alignCC }));
+        setCell(r, 3, emptyBorder());
+        setCell(r, 4, tblCell("Расчет", { alignment: alignCC }));
+        setCell(r, 5, tblCell("Значение", { alignment: alignCC }));
+        merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+        rows[r] = { hpt: 32 };
         r++;
 
-        // Table header
-        data.push(["Показатель", "Единица измерения", "Обоснование", "", "Расчет", "Значение"]);
-        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
-        const headerRow = r;
-        r++;
-
-        // Column numbers
-        data.push(["1", "2", "3", "", "4", "5"]);
-        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        // Row 9: Column numbers
+        [["1",0],["2",1],["3",2],["4",4],["5",5]].forEach(([v,c]) => {
+            setCell(r, c, tblCell(v, { alignment: alignCC }));
+        });
+        setCell(r, 3, emptyBorder());
+        merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+        rows[r] = { hpt: 18 };
         r++;
 
         // Row: Сметная стоимость
-        const smrCost = parseFormatted(costValue);
-        data.push(["", "тыс.руб.", costLabel, "", "", smrCost]);
-        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        setCell(r, 0, emptyBorder());
+        setCell(r, 1, tblCell("тыс.руб.", { alignment: alignCC }));
+        setCell(r, 2, tblCell(costLabel));
+        setCell(r, 3, emptyBorder());
+        setCell(r, 4, emptyBorder());
+        setCell(r, 5, tblCell(smrCost, { alignment: alignCC }));
+        merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+        rows[r] = { hpt: 36 };
         r++;
 
-        // Row: Коэффициент (фактический индекс)
-        const factIndex = parseFloat(indexValue) || 1;
-        data.push(["", "", indexLabel, "", indexDetail, factIndex]);
-        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        // Row: Коэффициент
+        setCell(r, 0, emptyBorder());
+        setCell(r, 1, emptyBorder());
+        setCell(r, 2, tblCell(indexLabel));
+        setCell(r, 3, emptyBorder());
+        setCell(r, 4, tblCell(indexDetail));
+        setCell(r, 5, tblCell(factIndex, { alignment: alignCC }));
+        merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+        rows[r] = { hpt: 57 };
         r++;
 
         // Row: Хоб
-        data.push(["Хоб", "тыс.руб.", finalLabel, "", "", horValue]);
-        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        setCell(r, 0, tblCell("Хоб", { alignment: alignCC }));
+        setCell(r, 1, tblCell("тыс.руб.", { alignment: alignCC }));
+        setCell(r, 2, tblCell(finalLabel));
+        setCell(r, 3, emptyBorder());
+        setCell(r, 4, emptyBorder());
+        setCell(r, 5, tblCell(horValue, { alignment: alignCC }));
+        merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+        rows[r] = { hpt: 36 };
         r++;
 
         // NZT rows
+        const nztStartRow = r;
         nztItems.forEach(item => {
-            const nztId = item.id;
-            data.push(["НЗТ " + nztId, "чел-дн", "Сборник НЗТ 8.02.ИО-2023", "", "", item.value]);
-            merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+            setCell(r, 0, tblCellBold("НЗТ  " + item.id));
+            setCell(r, 1, tblCellBold("чел-дн"));
+            setCell(r, 2, tblCell("Сборник норм затрат трудовых ресурсов НЗТ 8.02.ИО-2023"));
+            setCell(r, 3, emptyBorder());
+            setCell(r, 4, emptyBorder());
+            setCell(r, 5, tblCellBold(item.value));
+            merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+            rows[r] = { hpt: 50 };
             r++;
         });
 
-        // If more than one NZT — show total
-        if (nztItems.length > 1) {
-            data.push(["Итого НЗТ", "чел-дн", "", "", "", totalNzt]);
-            merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
-            r++;
-        }
-
         // Суст
-        data.push(["Суст.норм-дн.", "руб.", sustDetail, "", "", sustValue]);
-        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        setCell(r, 0, tblCellBold("Суст.норм-дн."));
+        setCell(r, 1, tblCellBold("руб."));
+        setCell(r, 2, tblCell(sustDetail));
+        setCell(r, 3, emptyBorder());
+        setCell(r, 4, emptyBorder());
+        setCell(r, 5, tblCell(sustVal, { alignment: alignCC }));
+        merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+        rows[r] = { hpt: 32 };
         r++;
 
         // Иуслуга
-        data.push(["Iуслуга", "", "Пункт 44 НЗТ 8.02.ИО.2023", "", iuslugaDetail, iuslugaValue]);
-        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        setCell(r, 0, tblCellBold("Iуслуга"));
+        setCell(r, 1, emptyBorder());
+        setCell(r, 2, tblCell("Пункт 44 НЗТ 8.02.ИО.2023 в редакции Приказа МАиС от 17.07.2025 №89"));
+        setCell(r, 3, emptyBorder());
+        setCell(r, 4, tblCell(iuslugaDetail));
+        setCell(r, 5, tblCell(iuslugaVal, { alignment: alignCC }));
+        merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+        rows[r] = { hpt: 36 };
         r++;
 
         // Кконкурс
-        data.push(["К конкурс", "", "Пункт 44 НЗТ 8.02.ИО.2023", "", "", kkonkurs]);
-        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        setCell(r, 0, tblCellBold("К конкурс"));
+        setCell(r, 1, emptyBorder());
+        setCell(r, 2, tblCell("Пункт 44 НЗТ 8.02.ИО.2023"));
+        setCell(r, 3, emptyBorder());
+        setCell(r, 4, emptyBorder());
+        setCell(r, 5, tblCell(kkonkurs, { alignment: alignCC }));
+        merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+        rows[r] = { hpt: 30 };
         r++;
 
         // Цпредл
-        data.push(["Цпредл", "руб.", "Цена предложения услуг (НЗТ8.02.ИО-2023 п.44)", "", cpredlFormula, cpredl]);
-        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        const cpredlFormulaText = "Цпредл = ΣНЗТ × Суст × (1 + 0,5 × (Iуслуга − 1)) × Кконкурс";
+        setCell(r, 0, tblCell("Цпредл", { alignment: alignCC }));
+        setCell(r, 1, tblCell("руб.", { alignment: alignCC }));
+        setCell(r, 2, tblCell("Цена предложения услуг (НЗТ8.02.ИО-2023 п.44)"));
+        setCell(r, 3, emptyBorder());
+        setCell(r, 4, tblCell(cpredlFormulaText));
+        setCell(r, 5, tblCellBold(cpredl));
+        merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+        rows[r] = { hpt: 53 };
         r++;
 
-        // Tax row
+        // Tax rows
         if (taxType === "nds") {
             const nds = cpredl * 0.2;
-            data.push(["НДС", "руб.", "", "", "0.2", nds]);
-            merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+            setCell(r, 0, tblCell("НДС", { alignment: alignCT }));
+            setCell(r, 1, tblCell("руб.", { alignment: alignCC }));
+            setCell(r, 2, emptyBorder());
+            setCell(r, 3, emptyBorder());
+            setCell(r, 4, tblCell("0.2"));
+            setCell(r, 5, tblCellBold(Math.round(nds * 100) / 100));
+            merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+            rows[r] = { hpt: 18 };
             r++;
-            data.push(["Цпредл с НДС", "руб.", "", "", "", finalPrice]);
-            merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+
+            setCell(r, 0, tblCell("Цпредл с НДС", { alignment: alignCT }));
+            setCell(r, 1, tblCell("руб.", { alignment: alignCC }));
+            setCell(r, 2, emptyBorder());
+            setCell(r, 3, emptyBorder());
+            setCell(r, 4, emptyBorder());
+            setCell(r, 5, tblCellBold(Math.round(finalPrice * 100) / 100));
+            merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+            rows[r] = { hpt: 18 };
             r++;
         } else if (taxType === "usn") {
-            data.push(["Цпредл (УСН включён)", "руб.", "", "", "", finalPrice]);
-            merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+            setCell(r, 0, tblCell("Цпредл (УСН)", { alignment: alignCT }));
+            setCell(r, 1, tblCell("руб.", { alignment: alignCC }));
+            setCell(r, 2, emptyBorder());
+            setCell(r, 3, emptyBorder());
+            setCell(r, 4, emptyBorder());
+            setCell(r, 5, tblCellBold(Math.round(finalPrice * 100) / 100));
+            merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+            rows[r] = { hpt: 18 };
             r++;
         }
 
         // Blank row
-        data.push([]);
         r++;
 
-        // Amount in words
-        data.push([finalPriceWords]);
-        merges.push({ s: { r: r, c: 0 }, e: { r: r, c: 5 } });
+        // Amount in words (bold, 14pt)
+        setCell(r, 0, { v: finalPriceWords, t: "s", s: { font: fontBoldLg, alignment: { ...alignLC, wrapText: true } } });
+        merges.push({ s: {r:r,c:0}, e: {r:r,c:4} });
+        rows[r] = { hpt: 19 };
         r++;
 
         // Blank row
-        data.push([]);
         r++;
 
         // Description of NZT functions
-        const nztDescription = "Стоимость инженерных услуг определена в соответствии с Методическими указаниями " +
+        const nztDesc = "Стоимость инженерных услуг определена в соответствии с Методическими указаниями " +
             "«О порядке определения стоимости услуг по организации и обеспечению строительства " +
             "при осуществлении функций заказчика, застройщика» и включает в себя:\n" +
             nztItems.map(item => "НЗТ " + item.id + " – " + item.label).join("\n");
-        data.push([nztDescription]);
-        merges.push({ s: { r: r, c: 0 }, e: { r: r, c: 5 } });
+        setCell(r, 0, { v: nztDesc, t: "s", s: { font: fontHdr, alignment: alignLT } });
+        merges.push({ s: {r:r,c:0}, e: {r:r,c:4} });
+        rows[r] = { hpt: 83 };
         r++;
 
-        // Create worksheet
-        const ws = XLSX.utils.aoa_to_sheet(data);
+        // Set range
+        ws["!ref"] = XLSX.utils.encode_range({ s: {r:0,c:0}, e: {r:r-1,c:5} });
         ws["!merges"] = merges;
 
-        // Column widths
+        // Column widths (matching original)
         ws["!cols"] = [
-            { wch: 18 },  // A: Показатель
-            { wch: 14 },  // B: Ед. изм.
-            { wch: 30 },  // C: Обоснование
-            { wch: 10 },  // D: (merged with C)
-            { wch: 35 },  // E: Расчет
-            { wch: 16 },  // F: Значение
+            { wch: 16 },    // A
+            { wch: 11.3 },  // B
+            { wch: 18.6 },  // C
+            { wch: 24.6 },  // D
+            { wch: 39.4 },  // E
+            { wch: 21.7 },  // F
         ];
 
-        // Sheet name
+        // Row heights
+        ws["!rows"] = rows;
+
         const sheetName = "Расчёт стоимости";
         XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
-        // Generate filename
         const today = new Date();
         const dd = String(today.getDate()).padStart(2, "0");
         const mm = String(today.getMonth() + 1).padStart(2, "0");
