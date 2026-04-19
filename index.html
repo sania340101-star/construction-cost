@@ -562,6 +562,7 @@
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 </head>
 <body>
     <!-- Login Screen -->
@@ -763,6 +764,39 @@
                     <div style="font-size: 13px; color: #555; margin-bottom: 8px;" id="cpredlCalc"></div>
                     <div style="font-size: 22px; font-weight: 700; color: #4a7cff;" id="cpredlValue"></div>
                 </div>
+
+                <!-- Налогообложение -->
+                <div id="taxSection" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e8eef5;">
+                    <div style="font-weight: 700; font-size: 14px; margin-bottom: 12px;">Налогообложение</div>
+                    <label style="display: block; padding: 8px 0; cursor: pointer;">
+                        <input type="radio" name="taxType" value="none" checked onchange="updateFinalPrice()"> Без учёта налогов
+                    </label>
+                    <label style="display: block; padding: 8px 0; cursor: pointer;">
+                        <input type="radio" name="taxType" value="usn" onchange="updateFinalPrice()"> УСН (включён в стоимость)
+                    </label>
+                    <label style="display: block; padding: 8px 0; cursor: pointer;">
+                        <input type="radio" name="taxType" value="nds" onchange="updateFinalPrice()"> НДС (20%)
+                    </label>
+                </div>
+
+                <!-- Итоговая цена -->
+                <div id="finalPriceSection" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 2px solid #10b981;">
+                    <div id="ndsLine" style="display: none; margin-bottom: 8px;">
+                        <span style="font-size: 14px;">НДС (20%): </span>
+                        <span style="font-weight: 600;" id="ndsValue"></span>
+                    </div>
+                    <div style="font-size: 14px; color: #666;" id="finalPriceLabel"></div>
+                    <div style="font-size: 24px; font-weight: 700; color: #10b981;" id="finalPriceValue"></div>
+                    <div style="font-size: 14px; color: #555; margin-top: 8px; font-style: italic;" id="finalPriceWords"></div>
+                </div>
+
+                <!-- Excel export -->
+                <div id="excelExportSection" style="display: none; margin-top: 20px; text-align: center;">
+                    <button onclick="exportToExcel()" style="background: #10b981; color: #fff; border: none; padding: 14px 32px; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                        Экспорт в Excel
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -771,12 +805,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.11</div>
+        <div class="app-footer">Версия 2.13</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.11";
+    const APP_VERSION = "2.13";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -2185,31 +2219,37 @@
         updateCpredl();
     }
 
-    // Show Иуслуга + Кконкурс + Цпредл when NZT results are visible
+    // Show Иуслуга + Кконкурс + Цпредл + Tax + Final when NZT results are visible
     function updateIuslugaVisibility() {
         const iuslugaEl = document.getElementById("iuslugaSection");
         const kkonkursEl = document.getElementById("kkonkursSection");
         const cpredlEl = document.getElementById("cpredlSection");
+        const taxEl = document.getElementById("taxSection");
+        const finalEl = document.getElementById("finalPriceSection");
         const nztResults = document.getElementById("nztResults");
         const visible = nztResults && nztResults.style.display === "block";
         if (iuslugaEl) iuslugaEl.style.display = visible ? "block" : "none";
         if (kkonkursEl) kkonkursEl.style.display = visible ? "block" : "none";
         if (cpredlEl) cpredlEl.style.display = visible ? "block" : "none";
+        if (taxEl) taxEl.style.display = visible ? "block" : "none";
+        if (finalEl) finalEl.style.display = visible ? "block" : "none";
+        const excelEl = document.getElementById("excelExportSection");
+        if (excelEl) excelEl.style.display = visible ? "block" : "none";
         if (visible) updateCpredl();
+    }
+
+    // Parse number from formatted text (handles both "3.99" and "3,99" and "1 355,67")
+    function parseFormatted(text) {
+        if (!text) return 0;
+        const clean = text.replace(/\s/g, "").replace(",", ".");
+        const m = clean.match(/([\d.]+)/);
+        return m ? parseFloat(m[1]) : 0;
     }
 
     // Calculate Цпредл = ΣНЗТ × Суст × (1 + 0.5 × (Иуслуга - 1)) × Кконкурс
     function updateCpredl() {
         const cpredlSection = document.getElementById("cpredlSection");
         if (!cpredlSection || cpredlSection.style.display === "none") return;
-
-        // Parse number from formatted text (handles both "3.99" and "3,99" and "1 355,67")
-        function parseFormatted(text) {
-            if (!text) return 0;
-            const clean = text.replace(/\s/g, "").replace(",", ".");
-            const m = clean.match(/([\d.]+)/);
-            return m ? parseFloat(m[1]) : 0;
-        }
 
         // Get ΣНЗТ from the total value element
         const totalEl = document.getElementById("nztTotalValue");
@@ -2243,6 +2283,341 @@
 
         document.getElementById("cpredlValue").textContent =
             "Цпредл = " + fmt(cpredl, 2) + " руб.";
+
+        updateFinalPrice();
+    }
+
+    // Number to Russian words
+    function numberToWordsRu(amount) {
+        const intPart = Math.floor(amount);
+        const kopPart = Math.round((amount - intPart) * 100);
+
+        const ones = ['', 'один', 'два', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+        const onesF = ['', 'одна', 'две', 'три', 'четыре', 'пять', 'шесть', 'семь', 'восемь', 'девять'];
+        const teens = ['десять', 'одиннадцать', 'двенадцать', 'тринадцать', 'четырнадцать', 'пятнадцать', 'шестнадцать', 'семнадцать', 'восемнадцать', 'девятнадцать'];
+        const tens = ['', '', 'двадцать', 'тридцать', 'сорок', 'пятьдесят', 'шестьдесят', 'семьдесят', 'восемьдесят', 'девяносто'];
+        const hundreds = ['', 'сто', 'двести', 'триста', 'четыреста', 'пятьсот', 'шестьсот', 'семьсот', 'восемьсот', 'девятьсот'];
+
+        function threeDigits(n, feminine) {
+            if (n === 0) return '';
+            const h = Math.floor(n / 100);
+            const remainder = n % 100;
+            const t = Math.floor(remainder / 10);
+            const o = remainder % 10;
+            let result = [];
+            if (h > 0) result.push(hundreds[h]);
+            if (t === 1) {
+                result.push(teens[o]);
+            } else {
+                if (t > 1) result.push(tens[t]);
+                if (o > 0) result.push(feminine ? onesF[o] : ones[o]);
+            }
+            return result.join(' ');
+        }
+
+        function rubWord(n) {
+            const lastTwo = n % 100;
+            const lastOne = n % 10;
+            if (lastTwo >= 11 && lastTwo <= 19) return 'белорусских рублей';
+            if (lastOne === 1) return 'белорусский рубль';
+            if (lastOne >= 2 && lastOne <= 4) return 'белорусских рубля';
+            return 'белорусских рублей';
+        }
+
+        if (intPart === 0) {
+            return '0 ' + rubWord(0) + ' ' + String(kopPart).padStart(2, '0') + ' копеек';
+        }
+
+        let parts = [];
+        const millions = Math.floor(intPart / 1000000);
+        const thousands = Math.floor((intPart % 1000000) / 1000);
+        const rest = intPart % 1000;
+
+        if (millions > 0) {
+            const mWord = threeDigits(millions, false);
+            const lastTwo = millions % 100;
+            const lastOne = millions % 10;
+            let mSuffix = 'миллионов';
+            if (lastTwo < 11 || lastTwo > 19) {
+                if (lastOne === 1) mSuffix = 'миллион';
+                else if (lastOne >= 2 && lastOne <= 4) mSuffix = 'миллиона';
+            }
+            parts.push(mWord + ' ' + mSuffix);
+        }
+        if (thousands > 0) {
+            const tWord = threeDigits(thousands, true);
+            const lastTwo = thousands % 100;
+            const lastOne = thousands % 10;
+            let tSuffix = 'тысяч';
+            if (lastTwo < 11 || lastTwo > 19) {
+                if (lastOne === 1) tSuffix = 'тысяча';
+                else if (lastOne >= 2 && lastOne <= 4) tSuffix = 'тысячи';
+            }
+            parts.push(tWord + ' ' + tSuffix);
+        }
+        if (rest > 0) {
+            parts.push(threeDigits(rest, false));
+        }
+
+        let text = parts.join(' ').trim();
+        text = text.charAt(0).toUpperCase() + text.slice(1);
+        text += ' ' + rubWord(intPart);
+        text += ' ' + String(kopPart).padStart(2, '0') + ' копеек';
+
+        return text;
+    }
+
+    // Update final price with tax
+    function updateFinalPrice() {
+        const cpredlSection = document.getElementById("cpredlSection");
+        const finalSection = document.getElementById("finalPriceSection");
+        const taxSection = document.getElementById("taxSection");
+
+        const excelSection = document.getElementById("excelExportSection");
+
+        if (!cpredlSection || cpredlSection.style.display === "none") {
+            if (finalSection) finalSection.style.display = "none";
+            if (taxSection) taxSection.style.display = "none";
+            if (excelSection) excelSection.style.display = "none";
+            return;
+        }
+
+        taxSection.style.display = "block";
+        finalSection.style.display = "block";
+        if (excelSection) excelSection.style.display = "block";
+
+        // Parse Цпредл
+        const cpredlEl = document.getElementById("cpredlValue");
+        const cpredl = cpredlEl ? parseFormatted(cpredlEl.textContent) : 0;
+
+        const taxType = document.querySelector('input[name="taxType"]:checked').value;
+        const ndsLine = document.getElementById("ndsLine");
+
+        let finalAmount = cpredl;
+
+        if (taxType === "nds") {
+            const nds = cpredl * 0.2;
+            finalAmount = cpredl + nds;
+            ndsLine.style.display = "block";
+            document.getElementById("ndsValue").textContent = fmt(nds, 2) + " руб.";
+            document.getElementById("finalPriceLabel").textContent = "Цпредл с НДС:";
+        } else {
+            ndsLine.style.display = "none";
+            document.getElementById("finalPriceLabel").textContent = taxType === "usn" ? "Цпредл (УСН включён):" : "Цпредл:";
+        }
+
+        document.getElementById("finalPriceValue").textContent = fmt(finalAmount, 2) + " руб.";
+        document.getElementById("finalPriceWords").textContent = numberToWordsRu(finalAmount);
+    }
+
+    // ========== Excel Export ==========
+
+    function exportToExcel() {
+        const wb = XLSX.utils.book_new();
+
+        // Gather data
+        const costLabel = document.getElementById("costLabel").textContent;
+        const costValue = document.getElementById("costValue").textContent;
+        const indexLabel = document.getElementById("indexLabel").textContent;
+        const indexValue = document.getElementById("indexValue").textContent;
+        const indexDetail = document.getElementById("indexDetail").textContent;
+        const finalLabel = document.getElementById("finalLabel").textContent;
+        const finalValue = document.getElementById("finalValue").textContent;
+
+        const horValue = parseFormatted(finalValue);
+        const sustValue = parseFormatted(document.getElementById("sustValue").textContent);
+        const sustDetail = document.getElementById("sustDetail").textContent.replace(/<br\/?>/g, " ");
+
+        const iuslugaEl = document.getElementById("iuslugaValue");
+        const iuslugaValue = iuslugaEl ? parseFormatted(iuslugaEl.textContent) : 1;
+        const iuslugaDetailEl = document.getElementById("iuslugaDetail");
+        const iuslugaDetail = iuslugaDetailEl ? iuslugaDetailEl.textContent : "";
+
+        const kkonkurs = parseFloat(document.getElementById("kkonkursInput").value) || 1;
+
+        const cpredlEl = document.getElementById("cpredlValue");
+        const cpredl = cpredlEl ? parseFormatted(cpredlEl.textContent) : 0;
+        const cpredlFormula = document.getElementById("cpredlFormula").textContent;
+
+        const taxType = document.querySelector('input[name="taxType"]:checked').value;
+        const finalPriceEl = document.getElementById("finalPriceValue");
+        const finalPrice = finalPriceEl ? parseFormatted(finalPriceEl.textContent) : cpredl;
+        const finalPriceWords = document.getElementById("finalPriceWords").textContent;
+
+        // Collect selected NZT functions
+        const checked = document.querySelectorAll("#nztCheckboxes input[type=checkbox][data-nzt-id]:checked");
+        const nztItems = [];
+        checked.forEach(cb => {
+            const nztId = cb.dataset.nztId;
+            const label = cb.parentElement.textContent.trim();
+            // Find the result value from rendered results
+            const resultEls = document.querySelectorAll(".nzt-result-item");
+            let nztVal = 0;
+            resultEls.forEach(el => {
+                const titleEl = el.querySelector(".nzt-result-title");
+                const valEl = el.querySelector(".nzt-result-value");
+                if (titleEl && titleEl.textContent.includes("НЗТ " + nztId) && valEl) {
+                    nztVal = parseFormatted(valEl.textContent);
+                }
+            });
+            nztItems.push({ id: nztId, label: label.replace(/^НЗТ\s*\d+\.\d+\s*[-–—]\s*/, ""), value: nztVal });
+        });
+
+        const totalNzt = parseFormatted(document.getElementById("nztTotalValue").textContent);
+
+        // Build worksheet data
+        const data = [];
+        const merges = [];
+        let r = 0;
+
+        // Row 0: УТВЕРЖДАЮ (right-aligned via merge)
+        data.push(["", "", "", "", "", "УТВЕРЖДАЮ"]);
+        r++;
+        data.push(["", "", "", "", "", "Директор"]);
+        r++;
+        data.push(["", "", "", "", "", ""]);
+        r++;
+        data.push(["", "", "", "", "", "______________ ______________"]);
+        r++;
+        data.push(["", "", "", "", "", "\" ____ \" __________  " + new Date().getFullYear() + " г."]);
+        r++;
+        data.push([]); // blank
+        r++;
+
+        // Title row (merged A-F)
+        const objectName = prompt("Название объекта строительства:") || "объект строительства";
+        data.push(["Расчет\nстоимости инженерных услуг по техническому надзору на объекте: «" + objectName + "»"]);
+        merges.push({ s: { r: r, c: 0 }, e: { r: r, c: 5 } });
+        r++;
+        data.push([]); // blank
+        r++;
+
+        // Table header
+        data.push(["Показатель", "Единица измерения", "Обоснование", "", "Расчет", "Значение"]);
+        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        const headerRow = r;
+        r++;
+
+        // Column numbers
+        data.push(["1", "2", "3", "", "4", "5"]);
+        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        r++;
+
+        // Row: Сметная стоимость
+        const smrCost = parseFormatted(costValue);
+        data.push(["", "тыс.руб.", costLabel, "", "", smrCost]);
+        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        r++;
+
+        // Row: Коэффициент (фактический индекс)
+        const factIndex = parseFloat(indexValue) || 1;
+        data.push(["", "", indexLabel, "", indexDetail, factIndex]);
+        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        r++;
+
+        // Row: Хоб
+        data.push(["Хоб", "тыс.руб.", finalLabel, "", "", horValue]);
+        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        r++;
+
+        // NZT rows
+        nztItems.forEach(item => {
+            const nztId = item.id;
+            data.push(["НЗТ " + nztId, "чел-дн", "Сборник НЗТ 8.02.ИО-2023", "", "", item.value]);
+            merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+            r++;
+        });
+
+        // If more than one NZT — show total
+        if (nztItems.length > 1) {
+            data.push(["Итого НЗТ", "чел-дн", "", "", "", totalNzt]);
+            merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+            r++;
+        }
+
+        // Суст
+        data.push(["Суст.норм-дн.", "руб.", sustDetail, "", "", sustValue]);
+        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        r++;
+
+        // Иуслуга
+        data.push(["Iуслуга", "", "Пункт 44 НЗТ 8.02.ИО.2023", "", iuslugaDetail, iuslugaValue]);
+        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        r++;
+
+        // Кконкурс
+        data.push(["К конкурс", "", "Пункт 44 НЗТ 8.02.ИО.2023", "", "", kkonkurs]);
+        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        r++;
+
+        // Цпредл
+        data.push(["Цпредл", "руб.", "Цена предложения услуг (НЗТ8.02.ИО-2023 п.44)", "", cpredlFormula, cpredl]);
+        merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+        r++;
+
+        // Tax row
+        if (taxType === "nds") {
+            const nds = cpredl * 0.2;
+            data.push(["НДС", "руб.", "", "", "0.2", nds]);
+            merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+            r++;
+            data.push(["Цпредл с НДС", "руб.", "", "", "", finalPrice]);
+            merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+            r++;
+        } else if (taxType === "usn") {
+            data.push(["Цпредл (УСН включён)", "руб.", "", "", "", finalPrice]);
+            merges.push({ s: { r: r, c: 2 }, e: { r: r, c: 3 } });
+            r++;
+        }
+
+        // Blank row
+        data.push([]);
+        r++;
+
+        // Amount in words
+        data.push([finalPriceWords]);
+        merges.push({ s: { r: r, c: 0 }, e: { r: r, c: 5 } });
+        r++;
+
+        // Blank row
+        data.push([]);
+        r++;
+
+        // Description of NZT functions
+        const nztDescription = "Стоимость инженерных услуг определена в соответствии с Методическими указаниями " +
+            "«О порядке определения стоимости услуг по организации и обеспечению строительства " +
+            "при осуществлении функций заказчика, застройщика» и включает в себя:\n" +
+            nztItems.map(item => "НЗТ " + item.id + " – " + item.label).join("\n");
+        data.push([nztDescription]);
+        merges.push({ s: { r: r, c: 0 }, e: { r: r, c: 5 } });
+        r++;
+
+        // Create worksheet
+        const ws = XLSX.utils.aoa_to_sheet(data);
+        ws["!merges"] = merges;
+
+        // Column widths
+        ws["!cols"] = [
+            { wch: 18 },  // A: Показатель
+            { wch: 14 },  // B: Ед. изм.
+            { wch: 30 },  // C: Обоснование
+            { wch: 10 },  // D: (merged with C)
+            { wch: 35 },  // E: Расчет
+            { wch: 16 },  // F: Значение
+        ];
+
+        // Sheet name
+        const sheetName = "Расчёт стоимости";
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+
+        // Generate filename
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, "0");
+        const mm = String(today.getMonth() + 1).padStart(2, "0");
+        const yyyy = today.getFullYear();
+        const filename = "Расчёт_стоимости_" + dd + "." + mm + "." + yyyy + ".xlsx";
+
+        XLSX.writeFile(wb, filename);
     }
 
     // Build NZT UI on load
