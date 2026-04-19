@@ -12,9 +12,145 @@
             color: #1a1a1a;
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        /* Header bar */
+        .header-bar {
+            width: 100%;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 8px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            color: #333;
+        }
+        .header-bar .user-email {
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 60%;
+        }
+        .header-bar .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .header-bar .header-actions button {
+            background: none;
+            border: none;
+            color: #666;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            width: auto;
+            margin: 0;
+            transition: background 0.2s;
+        }
+        .header-bar .header-actions button:hover {
+            background: #f0f2f5;
+            color: #1a1a1a;
+        }
+        .app-body {
+            padding: 40px 20px;
+            display: flex;
             justify-content: center;
             align-items: flex-start;
-            padding: 40px 20px;
+            width: 100%;
+            flex: 1;
+        }
+        /* Login screen */
+        .login-container {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            margin-top: 80px;
+        }
+        .login-container h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .login-container .subtitle {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+        .login-error {
+            color: #e74c3c;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .login-success {
+            color: #27ae60;
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 12px;
+            display: none;
+        }
+        .password-wrapper {
+            position: relative;
+        }
+        .password-wrapper input {
+            padding-right: 44px;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            padding: 4px;
+            width: auto;
+            margin: 0;
+            color: #999;
+            line-height: 1;
+        }
+        .password-toggle:hover {
+            color: #333;
+            background: none;
+        }
+        /* Settings panel */
+        .settings-panel {
+            display: none;
+            background: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 20px;
+            width: 100%;
+        }
+        .settings-inner {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .settings-panel h3 {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        .settings-panel .form-group {
+            margin-bottom: 12px;
+        }
+        .settings-panel button.settings-btn {
+            margin-top: 8px;
+        }
+        /* Footer */
+        .app-footer {
+            text-align: center;
+            padding: 12px;
+            font-size: 12px;
+            color: #999;
         }
         .container {
             background: #fff;
@@ -306,12 +442,18 @@
 
         /* Mobile adaptations */
         @media (max-width: 480px) {
-            body { padding: 0; }
+            .app-body { padding: 20px 0 0 0; }
+            .login-container {
+                border-radius: 0;
+                padding: 24px 16px;
+                box-shadow: none;
+                margin-top: 0;
+                max-width: 100%;
+            }
             .container {
                 border-radius: 0;
                 padding: 24px 16px;
                 box-shadow: none;
-                min-height: 100vh;
             }
             h1 { font-size: 20px; }
             .row { flex-direction: column; gap: 0; }
@@ -338,6 +480,70 @@
     </style>
 </head>
 <body>
+    <!-- Login Screen -->
+    <div id="loginScreen" style="width:100%;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;">
+        <div class="login-container">
+            <h1>Вход</h1>
+            <p class="subtitle">Введите учётные данные для доступа</p>
+            <div class="login-error" id="loginError"></div>
+            <div class="form-group">
+                <label for="loginEmail">Email</label>
+                <input type="email" id="loginEmail" placeholder="email@example.com" autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">Пароль</label>
+                <div class="password-wrapper">
+                    <input type="password" id="loginPassword" placeholder="Введите пароль" autocomplete="current-password">
+                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility('loginPassword', this)">&#128065;</button>
+                </div>
+            </div>
+            <button onclick="handleLogin()">Войти</button>
+        </div>
+    </div>
+
+    <!-- App (hidden until auth) -->
+    <div id="app" style="display:none;width:100%;">
+        <!-- Header bar -->
+        <div class="header-bar" id="headerBar">
+            <span class="user-email" id="headerEmail"></span>
+            <div class="header-actions">
+                <button onclick="toggleSettings()" title="Настройки">&#9881;&#65039;</button>
+                <button onclick="handleLogout()">Выйти</button>
+            </div>
+        </div>
+
+        <!-- Settings panel -->
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-inner">
+                <h3>Смена пароля</h3>
+                <div class="login-error" id="settingsError"></div>
+                <div class="login-success" id="settingsSuccess"></div>
+                <div class="form-group">
+                    <label for="oldPassword">Текущий пароль</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="oldPassword" placeholder="Текущий пароль">
+                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('oldPassword', this)">&#128065;</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="newPassword">Новый пароль</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="newPassword" placeholder="Новый пароль">
+                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('newPassword', this)">&#128065;</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Подтверждение пароля</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="confirmPassword" placeholder="Повторите новый пароль">
+                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility('confirmPassword', this)">&#128065;</button>
+                    </div>
+                </div>
+                <button class="settings-btn" onclick="handleChangePassword()">Сменить пароль</button>
+            </div>
+        </div>
+
+        <div class="app-body">
     <div class="container">
         <h1>Предельная стоимость строительства</h1>
         <p class="subtitle">Приведение сметной стоимости к 01.01.2025 по индексам СМР</p>
@@ -425,6 +631,182 @@
             Источник индексов: <a href="https://snzt.by/spravka.php?doc_id=003" target="_blank">snzt.by</a>
         </div>
     </div>
+        </div><!-- /app-body -->
+        <div class="app-footer">Версия 2.2</div>
+    </div><!-- /app -->
+
+    <script>
+    // ========== Authentication ==========
+    const APP_VERSION = "2.2";
+    const DEFAULT_AUTH_HASH = "dc314d98439df4a3fd0fa22a0051efcac187afd365ec1539dce08e30763db8e1";
+
+    function getAuthHash() {
+        return localStorage.getItem('auth_hash_override') || DEFAULT_AUTH_HASH;
+    }
+
+    async function sha256(text) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(text);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    function showApp(email) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('app').style.display = '';
+        document.getElementById('headerEmail').textContent = email;
+    }
+
+    function showLogin() {
+        document.getElementById('loginScreen').style.display = '';
+        document.getElementById('app').style.display = 'none';
+    }
+
+    // Check session on page load
+    function checkSession() {
+        try {
+            const session = JSON.parse(localStorage.getItem('auth_session'));
+            if (session && session.email && session.hash && session.timestamp) {
+                const thirtyDays = 30 * 24 * 60 * 60 * 1000;
+                if (Date.now() - session.timestamp < thirtyDays && session.hash === getAuthHash()) {
+                    showApp(session.email);
+                    return;
+                }
+            }
+        } catch (e) {}
+        showLogin();
+    }
+
+    async function handleLogin() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const password = document.getElementById('loginPassword').value;
+        const errorEl = document.getElementById('loginError');
+        errorEl.style.display = 'none';
+
+        if (!isValidEmail(email)) {
+            errorEl.textContent = 'Введите корректный email';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (!password) {
+            errorEl.textContent = 'Введите пароль';
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        const hash = await sha256(email.toLowerCase() + ':' + password);
+        if (hash === getAuthHash()) {
+            localStorage.setItem('auth_session', JSON.stringify({
+                email: email,
+                hash: hash,
+                timestamp: Date.now()
+            }));
+            showApp(email);
+        } else {
+            errorEl.textContent = 'Неверный email или пароль';
+            errorEl.style.display = 'block';
+        }
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('auth_session');
+        document.getElementById('loginEmail').value = '';
+        document.getElementById('loginPassword').value = '';
+        document.getElementById('loginError').style.display = 'none';
+        showLogin();
+    }
+
+    function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            btn.style.opacity = '1';
+        } else {
+            input.type = 'password';
+            btn.style.opacity = '0.6';
+        }
+    }
+
+    function toggleSettings() {
+        const panel = document.getElementById('settingsPanel');
+        panel.style.display = panel.style.display === 'none' || panel.style.display === '' ? 'block' : 'none';
+        // Clear fields when closing
+        if (panel.style.display === 'none') {
+            document.getElementById('oldPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+            document.getElementById('settingsError').style.display = 'none';
+            document.getElementById('settingsSuccess').style.display = 'none';
+        }
+    }
+
+    async function handleChangePassword() {
+        const errorEl = document.getElementById('settingsError');
+        const successEl = document.getElementById('settingsSuccess');
+        errorEl.style.display = 'none';
+        successEl.style.display = 'none';
+
+        const oldPwd = document.getElementById('oldPassword').value;
+        const newPwd = document.getElementById('newPassword').value;
+        const confirmPwd = document.getElementById('confirmPassword').value;
+
+        if (!oldPwd || !newPwd || !confirmPwd) {
+            errorEl.textContent = 'Заполните все поля';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (newPwd !== confirmPwd) {
+            errorEl.textContent = 'Новые пароли не совпадают';
+            errorEl.style.display = 'block';
+            return;
+        }
+        if (newPwd.length < 4) {
+            errorEl.textContent = 'Пароль должен быть не менее 4 символов';
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        const session = JSON.parse(localStorage.getItem('auth_session'));
+        if (!session) return;
+
+        const oldHash = await sha256(session.email.toLowerCase() + ':' + oldPwd);
+        if (oldHash !== getAuthHash()) {
+            errorEl.textContent = 'Неверный текущий пароль';
+            errorEl.style.display = 'block';
+            return;
+        }
+
+        const newHash = await sha256(session.email.toLowerCase() + ':' + newPwd);
+        localStorage.setItem('auth_hash_override', newHash);
+        localStorage.setItem('auth_session', JSON.stringify({
+            email: session.email,
+            hash: newHash,
+            timestamp: Date.now()
+        }));
+
+        successEl.textContent = 'Пароль успешно изменён';
+        successEl.style.display = 'block';
+        document.getElementById('oldPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmPassword').value = '';
+    }
+
+    // Allow Enter key on login form
+    document.getElementById('loginPassword').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') handleLogin();
+    });
+    document.getElementById('loginEmail').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') handleLogin();
+    });
+
+    // Check session on load
+    checkSession();
+    </script>
 
     <script>
     // СМР к предыдущему месяцу (индексы в %)
