@@ -28,7 +28,7 @@ test.describe('Calculator - Basic Flow', () => {
 
   test('page loads with correct version', async ({ page }) => {
     const footer = await page.textContent('.app-footer');
-    expect(footer).toContain('Версия 2.14');
+    expect(footer).toContain('Версия 2.15');
   });
 
   test('cost input accepts values', async ({ page }) => {
