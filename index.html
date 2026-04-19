@@ -746,6 +746,15 @@
                         <div class="result-detail" id="iuslugaDetail"></div>
                     </div>
                 </div>
+
+                <!-- Кконкурс -->
+                <div id="kkonkursSection" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e8eef5;">
+                    <div class="result-label" style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">Кконкурс (конкурсный коэффициент)</div>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <input type="number" id="kkonkursInput" value="1" min="0" step="0.01" style="width: 120px; font-size: 16px; padding: 10px 12px;" oninput="calculateNzt()">
+                        <span style="font-size: 14px; color: #666;">по умолчанию: 1</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -754,12 +763,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.6</div>
+        <div class="app-footer">Версия 2.7</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.6";
+    const APP_VERSION = "2.7";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -2169,10 +2178,11 @@
     // Show Иуслуга section when NZT results are visible
     function updateIuslugaVisibility() {
         const iuslugaEl = document.getElementById("iuslugaSection");
+        const kkonkursEl = document.getElementById("kkonkursSection");
         const nztResults = document.getElementById("nztResults");
-        if (iuslugaEl && nztResults) {
-            iuslugaEl.style.display = nztResults.style.display === "block" ? "block" : "none";
-        }
+        const visible = nztResults && nztResults.style.display === "block";
+        if (iuslugaEl) iuslugaEl.style.display = visible ? "block" : "none";
+        if (kkonkursEl) kkonkursEl.style.display = visible ? "block" : "none";
     }
 
     // Build NZT UI on load
