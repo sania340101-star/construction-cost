@@ -478,6 +478,8 @@
             .nzt-total-value { font-size: 18px; }
         }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 </head>
 <body>
     <!-- Login Screen -->
@@ -632,93 +634,73 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.2</div>
+        <div class="app-footer">Версия 2.3</div>
     </div><!-- /app -->
 
     <script>
-    // ========== Authentication ==========
-    const APP_VERSION = "2.2";
-    const DEFAULT_AUTH_HASH = "dc314d98439df4a3fd0fa22a0051efcac187afd365ec1539dce08e30763db8e1";
+    // ========== Authentication (Firebase) ==========
+    const APP_VERSION = "2.3";
 
-    function getAuthHash() {
-        return localStorage.getItem('auth_hash_override') || DEFAULT_AUTH_HASH;
-    }
+    const firebaseConfig = {
+        apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
+        authDomain: "construction-cost-ee79c.firebaseapp.com",
+        projectId: "construction-cost-ee79c",
+        storageBucket: "construction-cost-ee79c.firebasestorage.app",
+        messagingSenderId: "903708218203",
+        appId: "1:903708218203:web:c492528b8d96f81290c07e",
+    };
 
-    async function sha256(text) {
-        const encoder = new TextEncoder();
-        const data = encoder.encode(text);
-        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    }
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
 
-    function isValidEmail(email) {
+    function validateEmail(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
-    function showApp(email) {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('app').style.display = '';
-        document.getElementById('headerEmail').textContent = email;
-    }
-
-    function showLogin() {
-        document.getElementById('loginScreen').style.display = '';
-        document.getElementById('app').style.display = 'none';
-    }
-
-    // Check session on page load
-    function checkSession() {
-        try {
-            const session = JSON.parse(localStorage.getItem('auth_session'));
-            if (session && session.email && session.hash && session.timestamp) {
-                const thirtyDays = 30 * 24 * 60 * 60 * 1000;
-                if (Date.now() - session.timestamp < thirtyDays && session.hash === getAuthHash()) {
-                    showApp(session.email);
-                    return;
-                }
-            }
-        } catch (e) {}
-        showLogin();
-    }
+    // Auth state listener — replaces checkSession()
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            document.getElementById("loginScreen").style.display = "none";
+            document.getElementById("app").style.display = "block";
+            document.getElementById("headerEmail").textContent = user.email;
+        } else {
+            document.getElementById("loginScreen").style.display = "flex";
+            document.getElementById("app").style.display = "none";
+        }
+    });
 
     async function handleLogin() {
-        const email = document.getElementById('loginEmail').value.trim();
-        const password = document.getElementById('loginPassword').value;
-        const errorEl = document.getElementById('loginError');
-        errorEl.style.display = 'none';
+        const email = document.getElementById("loginEmail").value.trim();
+        const password = document.getElementById("loginPassword").value;
+        const errorEl = document.getElementById("loginError");
+        errorEl.style.display = "none";
 
-        if (!isValidEmail(email)) {
-            errorEl.textContent = 'Введите корректный email';
-            errorEl.style.display = 'block';
+        if (!email || !validateEmail(email)) {
+            errorEl.textContent = "Введите корректный email";
+            errorEl.style.display = "block";
             return;
         }
         if (!password) {
-            errorEl.textContent = 'Введите пароль';
-            errorEl.style.display = 'block';
+            errorEl.textContent = "Введите пароль";
+            errorEl.style.display = "block";
             return;
         }
 
-        const hash = await sha256(email.toLowerCase() + ':' + password);
-        if (hash === getAuthHash()) {
-            localStorage.setItem('auth_session', JSON.stringify({
-                email: email,
-                hash: hash,
-                timestamp: Date.now()
-            }));
-            showApp(email);
-        } else {
-            errorEl.textContent = 'Неверный email или пароль';
-            errorEl.style.display = 'block';
+        try {
+            await auth.signInWithEmailAndPassword(email, password);
+            // onAuthStateChanged will handle UI
+        } catch (e) {
+            if (e.code === 'auth/user-not-found' || e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+                errorEl.textContent = "Неверный email или пароль";
+            } else {
+                errorEl.textContent = "Ошибка: " + e.message;
+            }
+            errorEl.style.display = "block";
         }
     }
 
     function handleLogout() {
-        localStorage.removeItem('auth_session');
-        document.getElementById('loginEmail').value = '';
-        document.getElementById('loginPassword').value = '';
-        document.getElementById('loginError').style.display = 'none';
-        showLogin();
+        auth.signOut();
     }
 
     function togglePasswordVisibility(inputId, btn) {
@@ -746,54 +728,56 @@
     }
 
     async function handleChangePassword() {
-        const errorEl = document.getElementById('settingsError');
-        const successEl = document.getElementById('settingsSuccess');
-        errorEl.style.display = 'none';
-        successEl.style.display = 'none';
-
-        const oldPwd = document.getElementById('oldPassword').value;
-        const newPwd = document.getElementById('newPassword').value;
-        const confirmPwd = document.getElementById('confirmPassword').value;
+        const oldPwd = document.getElementById("settingsOldPassword") ?
+            document.getElementById("settingsOldPassword").value :
+            document.getElementById("oldPassword").value;
+        const newPwd = document.getElementById("settingsNewPassword") ?
+            document.getElementById("settingsNewPassword").value :
+            document.getElementById("newPassword").value;
+        const confirmPwd = document.getElementById("settingsConfirmPassword") ?
+            document.getElementById("settingsConfirmPassword").value :
+            document.getElementById("confirmPassword").value;
+        const errorEl = document.getElementById("settingsError");
+        const successEl = document.getElementById("settingsSuccess");
+        errorEl.style.display = "none";
+        successEl.style.display = "none";
 
         if (!oldPwd || !newPwd || !confirmPwd) {
-            errorEl.textContent = 'Заполните все поля';
-            errorEl.style.display = 'block';
+            errorEl.textContent = "Заполните все поля";
+            errorEl.style.display = "block";
             return;
         }
         if (newPwd !== confirmPwd) {
-            errorEl.textContent = 'Новые пароли не совпадают';
-            errorEl.style.display = 'block';
+            errorEl.textContent = "Новые пароли не совпадают";
+            errorEl.style.display = "block";
             return;
         }
-        if (newPwd.length < 4) {
-            errorEl.textContent = 'Пароль должен быть не менее 4 символов';
-            errorEl.style.display = 'block';
-            return;
-        }
-
-        const session = JSON.parse(localStorage.getItem('auth_session'));
-        if (!session) return;
-
-        const oldHash = await sha256(session.email.toLowerCase() + ':' + oldPwd);
-        if (oldHash !== getAuthHash()) {
-            errorEl.textContent = 'Неверный текущий пароль';
-            errorEl.style.display = 'block';
+        if (newPwd.length < 6) {
+            errorEl.textContent = "Пароль должен быть не менее 6 символов";
+            errorEl.style.display = "block";
             return;
         }
 
-        const newHash = await sha256(session.email.toLowerCase() + ':' + newPwd);
-        localStorage.setItem('auth_hash_override', newHash);
-        localStorage.setItem('auth_session', JSON.stringify({
-            email: session.email,
-            hash: newHash,
-            timestamp: Date.now()
-        }));
-
-        successEl.textContent = 'Пароль успешно изменён';
-        successEl.style.display = 'block';
-        document.getElementById('oldPassword').value = '';
-        document.getElementById('newPassword').value = '';
-        document.getElementById('confirmPassword').value = '';
+        try {
+            const user = auth.currentUser;
+            // Re-authenticate with old password
+            const credential = firebase.auth.EmailAuthProvider.credential(user.email, oldPwd);
+            await user.reauthenticateWithCredential(credential);
+            // Update password
+            await user.updatePassword(newPwd);
+            successEl.textContent = "Пароль успешно изменён!";
+            successEl.style.display = "block";
+            document.getElementById("oldPassword").value = "";
+            document.getElementById("newPassword").value = "";
+            document.getElementById("confirmPassword").value = "";
+        } catch (e) {
+            if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+                errorEl.textContent = "Неверный старый пароль";
+            } else {
+                errorEl.textContent = "Ошибка: " + e.message;
+            }
+            errorEl.style.display = "block";
+        }
     }
 
     // Allow Enter key on login form
@@ -803,9 +787,6 @@
     document.getElementById('loginEmail').addEventListener('keydown', function(e) {
         if (e.key === 'Enter') handleLogin();
     });
-
-    // Check session on load
-    checkSession();
     </script>
 
     <script>
