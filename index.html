@@ -805,12 +805,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.13</div>
+        <div class="app-footer">Версия 2.14</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.13";
+    const APP_VERSION = "2.14";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -1992,6 +1992,8 @@
                 const match = values[1].match(/(\d+)[,.](\d{2})/);
                 if (match) {
                     const sust = parseFloat(match[1] + "." + match[2]);
+                    // Bounds check — Суст should be in a reasonable range (100-2000 BYN)
+                    if (sust < 100 || sust > 2000) throw new Error("Суст value out of range: " + sust);
                     // Extract document name
                     const docMatch = html2.match(/Постановлени[ея]\s+.*?№\s*(\d+)/i);
                     const dateMatch = html2.match(/от\s+(\d{2}\.\d{2}\.\d{4})/);
@@ -2241,7 +2243,7 @@
     // Parse number from formatted text (handles both "3.99" and "3,99" and "1 355,67")
     function parseFormatted(text) {
         if (!text) return 0;
-        const clean = text.replace(/\s/g, "").replace(",", ".");
+        const clean = text.replace(/\s/g, "").replace(/,/g, ".");
         const m = clean.match(/([\d.]+)/);
         return m ? parseFloat(m[1]) : 0;
     }
@@ -2256,7 +2258,7 @@
         const sumNzt = totalEl ? parseFormatted(totalEl.textContent) : 0;
 
         // Get Суст
-        const sustEl = document.getElementById("nztSustValue");
+        const sustEl = document.getElementById("sustValue");
         const sust = sustEl ? parseFormatted(sustEl.textContent) : 451.89;
 
         // Get Иуслуга
@@ -2329,10 +2331,22 @@
         }
 
         let parts = [];
-        const millions = Math.floor(intPart / 1000000);
+        const billions = Math.floor(intPart / 1000000000);
+        const millions = Math.floor((intPart % 1000000000) / 1000000);
         const thousands = Math.floor((intPart % 1000000) / 1000);
         const rest = intPart % 1000;
 
+        if (billions > 0) {
+            const bWord = threeDigits(billions, false);
+            const lastTwo = billions % 100;
+            const lastOne = billions % 10;
+            let bSuffix = 'миллиардов';
+            if (lastTwo < 11 || lastTwo > 19) {
+                if (lastOne === 1) bSuffix = 'миллиард';
+                else if (lastOne >= 2 && lastOne <= 4) bSuffix = 'миллиарда';
+            }
+            parts.push(bWord + ' ' + bSuffix);
+        }
         if (millions > 0) {
             const mWord = threeDigits(millions, false);
             const lastTwo = millions % 100;
