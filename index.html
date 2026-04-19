@@ -751,9 +751,17 @@
                 <div id="kkonkursSection" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e8eef5;">
                     <div class="result-label" style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">Кконкурс (конкурсный коэффициент)</div>
                     <div style="display: flex; align-items: center; gap: 12px;">
-                        <input type="number" id="kkonkursInput" value="1" min="0" step="0.01" style="width: 120px; font-size: 16px; padding: 10px 12px;" oninput="calculateNzt()">
+                        <input type="number" id="kkonkursInput" value="1" min="0" step="0.01" style="width: 120px; font-size: 16px; padding: 10px 12px;" oninput="updateCpredl()">
                         <span style="font-size: 14px; color: #666;">по умолчанию: 1</span>
                     </div>
+                </div>
+
+                <!-- Цпредл -->
+                <div id="cpredlSection" style="display: none; margin-top: 20px; padding-top: 16px; border-top: 2px solid #4a7cff;">
+                    <div class="result-label" style="font-weight: 700; font-size: 16px; margin-bottom: 8px;">Цпредл (цена предложения)</div>
+                    <div style="font-size: 13px; color: #666; margin-bottom: 8px;" id="cpredlFormula"></div>
+                    <div style="font-size: 13px; color: #555; margin-bottom: 8px;" id="cpredlCalc"></div>
+                    <div style="font-size: 22px; font-weight: 700; color: #4a7cff;" id="cpredlValue"></div>
                 </div>
             </div>
         </div>
@@ -763,12 +771,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.7</div>
+        <div class="app-footer">Версия 2.8</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.7";
+    const APP_VERSION = "2.8";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -2173,16 +2181,62 @@
             detailHtml += "Письмо МАиС от 21.03.2025 №04.3-05/4106";
             document.getElementById("iuslugaDetail").innerHTML = detailHtml;
         }
+        updateCpredl();
     }
 
-    // Show Иуслуга section when NZT results are visible
+    // Show Иуслуга + Кконкурс + Цпредл when NZT results are visible
     function updateIuslugaVisibility() {
         const iuslugaEl = document.getElementById("iuslugaSection");
         const kkonkursEl = document.getElementById("kkonkursSection");
+        const cpredlEl = document.getElementById("cpredlSection");
         const nztResults = document.getElementById("nztResults");
         const visible = nztResults && nztResults.style.display === "block";
         if (iuslugaEl) iuslugaEl.style.display = visible ? "block" : "none";
         if (kkonkursEl) kkonkursEl.style.display = visible ? "block" : "none";
+        if (cpredlEl) cpredlEl.style.display = visible ? "block" : "none";
+        if (visible) updateCpredl();
+    }
+
+    // Calculate Цпредл = ΣНЗТ × Суст × (1 + 0.5 × (Иуслуга - 1)) × Кконкурс
+    function updateCpredl() {
+        const cpredlSection = document.getElementById("cpredlSection");
+        if (!cpredlSection || cpredlSection.style.display === "none") return;
+
+        // Get ΣНЗТ from the total
+        const totalEl = document.getElementById("nztTotal");
+        const totalMatch = totalEl ? totalEl.textContent.match(/([\d.]+)/) : null;
+        const sumNzt = totalMatch ? parseFloat(totalMatch[1]) : 0;
+
+        // Get Суст
+        const sustEl = document.getElementById("nztSustValue");
+        const sustMatch = sustEl ? sustEl.textContent.match(/([\d.]+)/) : null;
+        const sust = sustMatch ? parseFloat(sustMatch[1]) : 451.89;
+
+        // Get Иуслуга
+        const iuslugaEl = document.getElementById("iuslugaValue");
+        const iuslugaMatch = iuslugaEl ? iuslugaEl.textContent.match(/([\d.]+)/) : null;
+        const iusluga = iuslugaMatch ? parseFloat(iuslugaMatch[1]) : 1;
+
+        // Get Кконкурс
+        const kkonkurs = parseFloat(document.getElementById("kkonkursInput").value) || 1;
+
+        if (sumNzt <= 0) {
+            cpredlSection.style.display = "none";
+            return;
+        }
+
+        // Цпредл = ΣНЗТ × Суст × (1 + 0.5 × (Иуслуга - 1)) × Кконкурс
+        const cpredl = sumNzt * sust * (1 + 0.5 * (iusluga - 1)) * kkonkurs;
+
+        document.getElementById("cpredlFormula").textContent =
+            "Формула: Цпредл = ΣНЗТ × Суст × (1 + 0,5 × (Иуслуга − 1)) × Кконкурс";
+
+        document.getElementById("cpredlCalc").textContent =
+            "Расчёт: " + fmt(sumNzt, 2) + " × " + fmt(sust, 2) + " × (1 + 0,5 × (" +
+            fmt(iusluga, 4) + " − 1)) × " + fmt(kkonkurs, 2) + " = " + fmt(cpredl, 2);
+
+        document.getElementById("cpredlValue").textContent =
+            "Цпредл = " + fmt(cpredl, 2) + " руб.";
     }
 
     // Build NZT UI on load
