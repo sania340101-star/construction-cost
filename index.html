@@ -731,57 +731,12 @@
                     <div class="iusluga-dates">
                         <div class="row">
                             <div class="form-group">
-                                <label>Дата заключения договора (месяц)</label>
-                                <select id="contractMonth">
-                                    <option value="1">Январь</option>
-                                    <option value="2">Февраль</option>
-                                    <option value="3">Март</option>
-                                    <option value="4">Апрель</option>
-                                    <option value="5">Май</option>
-                                    <option value="6">Июнь</option>
-                                    <option value="7">Июль</option>
-                                    <option value="8">Август</option>
-                                    <option value="9">Сентябрь</option>
-                                    <option value="10">Октябрь</option>
-                                    <option value="11">Ноябрь</option>
-                                    <option value="12">Декабрь</option>
-                                </select>
+                                <label>Дата начала оказания услуг</label>
+                                <input type="text" id="startDateInput" placeholder="ДД.ММ.ГГГГ" maxlength="10" style="font-size: 16px;">
                             </div>
                             <div class="form-group">
-                                <label>Год</label>
-                                <select id="contractYear">
-                                    <option value="2024">2024</option>
-                                    <option value="2025" selected>2025</option>
-                                    <option value="2026">2026</option>
-                                    <option value="2027">2027</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="form-group">
-                                <label>Дата окончания работ (месяц)</label>
-                                <select id="endMonth">
-                                    <option value="1">Январь</option>
-                                    <option value="2">Февраль</option>
-                                    <option value="3">Март</option>
-                                    <option value="4">Апрель</option>
-                                    <option value="5">Май</option>
-                                    <option value="6">Июнь</option>
-                                    <option value="7">Июль</option>
-                                    <option value="8">Август</option>
-                                    <option value="9">Сентябрь</option>
-                                    <option value="10">Октябрь</option>
-                                    <option value="11">Ноябрь</option>
-                                    <option value="12">Декабрь</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label>Год</label>
-                                <select id="endYear">
-                                    <option value="2025">2025</option>
-                                    <option value="2026" selected>2026</option>
-                                    <option value="2027">2027</option>
-                                </select>
+                                <label>Дата окончания оказания услуг</label>
+                                <input type="text" id="endDateInput" placeholder="ДД.ММ.ГГГГ" maxlength="10" style="font-size: 16px;">
                             </div>
                         </div>
                     </div>
@@ -2143,46 +2098,80 @@
         return { value: iusluga, detail: "", indices: indices };
     }
 
-    function calculateAndDisplayIusluga() {
-        const contractYear = parseInt(document.getElementById("contractYear").value);
-        const contractMonth = parseInt(document.getElementById("contractMonth").value);
-        const endYear = parseInt(document.getElementById("endYear").value);
-        const endMonth = parseInt(document.getElementById("endMonth").value);
+    function parseDate(input) {
+        const m = input.trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})$/);
+        if (!m) return null;
+        const d = parseInt(m[1]), mo = parseInt(m[2]), y = parseInt(m[3]);
+        if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+        return { day: d, month: mo, year: y };
+    }
 
-        // Validate: end date must be >= contract date
-        if (endYear < contractYear || (endYear === contractYear && endMonth < contractMonth)) {
-            const resultDiv = document.getElementById("iuslugaResult");
-            resultDiv.style.display = "block";
-            document.getElementById("iuslugaValue").textContent = "";
-            document.getElementById("iuslugaDetail").innerHTML =
-                '<span style="color: #e74c3c; font-weight: 600;">Дата окончания работ должна быть позже даты заключения договора</span>';
+    function calculateAndDisplayIusluga() {
+        const startInput = document.getElementById("startDateInput").value;
+        const endInput = document.getElementById("endDateInput").value;
+        const resultDiv = document.getElementById("iuslugaResult");
+
+        if (!startInput || !endInput) {
+            resultDiv.style.display = "none";
             return;
         }
 
-        const result = calculateIusluga(contractYear, contractMonth, endYear, endMonth);
-        const resultDiv = document.getElementById("iuslugaResult");
+        const startDate = parseDate(startInput);
+        const endDate = parseDate(endInput);
+
+        if (!startDate) {
+            resultDiv.style.display = "block";
+            document.getElementById("iuslugaValue").textContent = "";
+            document.getElementById("iuslugaDetail").innerHTML =
+                '<span style="color: #e74c3c; font-weight: 600;">⚠️ Дата начала: введите в формате ДД.ММ.ГГГГ</span>';
+            return;
+        }
+        if (!endDate) {
+            resultDiv.style.display = "block";
+            document.getElementById("iuslugaValue").textContent = "";
+            document.getElementById("iuslugaDetail").innerHTML =
+                '<span style="color: #e74c3c; font-weight: 600;">⚠️ Дата окончания: введите в формате ДД.ММ.ГГГГ</span>';
+            return;
+        }
+
+        if (endDate.year < startDate.year || (endDate.year === startDate.year && endDate.month < startDate.month)) {
+            resultDiv.style.display = "block";
+            document.getElementById("iuslugaValue").textContent = "";
+            document.getElementById("iuslugaDetail").innerHTML =
+                '<span style="color: #e74c3c; font-weight: 600;">⚠️ Дата окончания должна быть позже даты начала</span>';
+            return;
+        }
+
+        // Effective end month: day=1 → don't include that month
+        let effectiveEndMonth = endDate.month;
+        let effectiveEndYear = endDate.year;
+        if (endDate.day === 1) {
+            effectiveEndMonth = endDate.month - 1;
+            if (effectiveEndMonth === 0) {
+                effectiveEndMonth = 12;
+                effectiveEndYear = endDate.year - 1;
+            }
+        }
+
+        const result = calculateIusluga(startDate.year, startDate.month, effectiveEndYear, effectiveEndMonth);
         resultDiv.style.display = "block";
 
         document.getElementById("iuslugaValue").textContent = "Иуслуга = " + result.value.toFixed(4);
 
         if (result.indices.length === 0) {
-            // Same year
             document.getElementById("iuslugaDetail").innerHTML =
                 "(Работы в пределах одного календарного года)";
         } else {
-            // Build detail string
-            const indexParts = result.indices.map(function(i) {
-                return i.index.toFixed(4);
-            });
-            const monthParts = result.indices.map(function(i) {
-                return MONTHS_RU_SHORT[i.month] + " " + i.year;
-            });
+            const indexParts = result.indices.map(function(i) { return i.index.toFixed(4); });
+            const monthParts = result.indices.map(function(i) { return MONTHS_RU_SHORT[i.month] + " " + i.year; });
 
             let detailHtml = "(Прогнозные индексы цен строительства для прочих затрат)<br>";
             detailHtml += "Расчёт: " + indexParts.join(" × ") + " = " + result.value.toFixed(4);
             detailHtml += " (" + monthParts.join(", ") + ")<br>";
+            if (endDate.day === 1) {
+                detailHtml += "<em>Индекс за " + MONTHS_RU_SHORT[endDate.month] + " не включён (1-е число)</em><br>";
+            }
             detailHtml += "Письмо МАиС от 21.03.2025 №04.3-05/4106";
-
             document.getElementById("iuslugaDetail").innerHTML = detailHtml;
         }
     }
