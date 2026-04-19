@@ -771,12 +771,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.10</div>
+        <div class="app-footer">Версия 2.11</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.10";
+    const APP_VERSION = "2.11";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -2203,20 +2203,25 @@
         const cpredlSection = document.getElementById("cpredlSection");
         if (!cpredlSection || cpredlSection.style.display === "none") return;
 
+        // Parse number from formatted text (handles both "3.99" and "3,99" and "1 355,67")
+        function parseFormatted(text) {
+            if (!text) return 0;
+            const clean = text.replace(/\s/g, "").replace(",", ".");
+            const m = clean.match(/([\d.]+)/);
+            return m ? parseFloat(m[1]) : 0;
+        }
+
         // Get ΣНЗТ from the total value element
         const totalEl = document.getElementById("nztTotalValue");
-        const totalMatch = totalEl ? totalEl.textContent.match(/([\d.]+)/) : null;
-        const sumNzt = totalMatch ? parseFloat(totalMatch[1]) : 0;
+        const sumNzt = totalEl ? parseFormatted(totalEl.textContent) : 0;
 
         // Get Суст
         const sustEl = document.getElementById("nztSustValue");
-        const sustMatch = sustEl ? sustEl.textContent.match(/([\d.]+)/) : null;
-        const sust = sustMatch ? parseFloat(sustMatch[1]) : 451.89;
+        const sust = sustEl ? parseFormatted(sustEl.textContent) : 451.89;
 
         // Get Иуслуга
         const iuslugaEl = document.getElementById("iuslugaValue");
-        const iuslugaMatch = iuslugaEl ? iuslugaEl.textContent.match(/([\d.]+)/) : null;
-        const iusluga = iuslugaMatch ? parseFloat(iuslugaMatch[1]) : 1;
+        const iusluga = iuslugaEl ? parseFormatted(iuslugaEl.textContent) : 1;
 
         // Get Кконкурс
         const kkonkurs = parseFloat(document.getElementById("kkonkursInput").value) || 1;
