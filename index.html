@@ -419,7 +419,16 @@
         "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"
     ];
 
-    // Table 3.2 — simple NZT lookup
+    // Table 3.1 — 6.1 (разработчик предпроектной), 6.3 (генпроектная), 6.4 (генподрядная)
+    const TABLE_3_1 = [
+        {id: "И030101а", maxCost: 1000, nzt: 8.0},
+        {id: "И030102а", maxCost: 10000, nzt: 9.5},
+        {id: "И030103а", maxCost: 50000, nzt: 11.5},
+        {id: "И030104а", maxCost: 100000, nzt: 15.5},
+        {id: "И030105а", maxCost: Infinity, nzt: 19.0},
+    ];
+
+    // Table 3.2 — 6.5 (подрядные на отдельные виды работ)
     const TABLE_3_2 = [
         {id: "И030201а", maxCost: 100, nzt: 5.0},
         {id: "И030202а", maxCost: 1000, nzt: 5.5},
@@ -429,6 +438,33 @@
         {id: "И030206а", maxCost: 100000, nzt: 15.5},
         {id: "И030207а", maxCost: Infinity, nzt: 19.0},
     ];
+
+    // Table 3.3 — 6.2 (поставщики оборудования)
+    const TABLE_3_3 = [
+        {id: "И030301а", maxCost: 1000, nzt: 6.0},
+        {id: "И030302а", maxCost: 10000, nzt: 8.5},
+        {id: "И030303а", maxCost: 50000, nzt: 11.5},
+        {id: "И030304а", maxCost: 100000, nzt: 13.5},
+        {id: "И030305а", maxCost: Infinity, nzt: 16.0},
+    ];
+
+    // Table 3.4 — 6.6 (субподрядные: материалы, изделия, конструкции)
+    const TABLE_3_4 = [
+        {id: "И030401а", maxCost: 100, nzt: 3.0},
+        {id: "И030402а", maxCost: 1000, nzt: 4.0},
+        {id: "И030403а", maxCost: 5000, nzt: 5.0},
+        {id: "И030404а", maxCost: 10000, nzt: 6.5},
+        {id: "И030405а", maxCost: 50000, nzt: 8.0},
+        {id: "И030406а", maxCost: Infinity, nzt: 10.0},
+    ];
+
+    // Mapping: which table to use for each НЗТ function
+    const NZT_TABLE_MAP = {
+        "6.1": TABLE_3_1, "6.3": TABLE_3_1, "6.4": TABLE_3_1,
+        "6.5": TABLE_3_2,
+        "6.2": TABLE_3_3,
+        "6.6": TABLE_3_4,
+    };
 
     // Table 1.1 — complex NZT with sub-functions
     // col1=Общее руководство проектированием, col2=Финансовый контроль,
@@ -689,13 +725,13 @@
     }
 
     // Lookup Table 3.2 — simple NZT
-    function lookupTable32(hor) {
-        for (const row of TABLE_3_2) {
+    function lookupSimpleTable(hor, table) {
+        for (const row of table) {
             if (hor <= row.maxCost) {
                 return { id: row.id, nzt: row.nzt };
             }
         }
-        return { id: TABLE_3_2[TABLE_3_2.length - 1].id, nzt: TABLE_3_2[TABLE_3_2.length - 1].nzt };
+        return { id: table[table.length - 1].id, nzt: table[table.length - 1].nzt };
     }
 
     // Interpolate Table 1.1 — complex NZT
@@ -797,7 +833,8 @@
             const nztType = cb.dataset.nztType;
 
             if (nztType === "simple") {
-                const result = lookupTable32(currentHor);
+                const table = NZT_TABLE_MAP[nztId] || TABLE_3_2;
+                const result = lookupSimpleTable(currentHor, table);
                 const item = document.createElement("div");
                 item.className = "nzt-result-item";
                 item.innerHTML =
