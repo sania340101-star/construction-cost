@@ -195,6 +195,33 @@
             padding-left: 0;
         }
 
+        /* Area inputs for 5.4-5.7 */
+        .nzt-area-inputs {
+            display: none;
+            margin: 12px 0 12px 20px;
+            padding: 16px;
+            background: #eef3ff;
+            border-radius: 8px;
+            border: 1px solid #d0dcf0;
+        }
+        .nzt-area-inputs .form-group {
+            margin-bottom: 12px;
+        }
+        .nzt-area-inputs .form-group:last-child {
+            margin-bottom: 0;
+        }
+        .nzt-area-inputs label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+        .nzt-area-inputs select,
+        .nzt-area-inputs input {
+            font-size: 14px;
+            padding: 10px 12px;
+        }
+
         /* NZT results */
         .nzt-results {
             display: none;
@@ -341,6 +368,21 @@
             <h2>Функции НЗТ</h2>
             <div id="nztCheckboxes"></div>
 
+            <div class="nzt-area-inputs" id="nztAreaInputs">
+                <div class="form-group">
+                    <label>Тип объекта строительства</label>
+                    <select id="objectType" onchange="calculateNzt()">
+                        <option value="civil">Жилищно-гражданский</option>
+                        <option value="industrial">Производственный</option>
+                        <option value="linear">Линейный</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Площадь участка (га)</label>
+                    <input type="number" id="siteArea" placeholder="Например: 10" min="0.1" step="0.1" oninput="calculateNzt()">
+                </div>
+            </div>
+
             <div class="nzt-results" id="nztResults">
                 <h3>Результаты расчёта НЗТ</h3>
                 <div id="nztResultsList"></div>
@@ -466,6 +508,92 @@
         "6.6": TABLE_3_4,
     };
 
+    // Table 2.5 — НЗТ 5.4 (same for all object types)
+    const TABLE_2_5 = [
+        {area: 0.5, nzt: 4.9}, {area: 1, nzt: 5.2}, {area: 5, nzt: 5.7},
+        {area: 10, nzt: 6.0}, {area: 15, nzt: 6.2}, {area: 20, nzt: 6.3},
+        {area: 30, nzt: 6.5}, {area: 40, nzt: 6.6}, {area: 50, nzt: 6.7},
+        {area: 70, nzt: 6.8}, {area: 100, nzt: 7.0}, {area: 200, nzt: 7.7},
+        {area: 300, nzt: 8.0},
+    ];
+
+    // Table 2.6 — НЗТ 5.5 (by object type)
+    const TABLE_2_6 = {
+        "civil": [
+            {area: 0.5, nzt: 6.1}, {area: 1, nzt: 6.4}, {area: 5, nzt: 7.2},
+            {area: 10, nzt: 7.5}, {area: 15, nzt: 7.7}, {area: 20, nzt: 7.9},
+            {area: 30, nzt: 8.1}, {area: 40, nzt: 8.2}, {area: 50, nzt: 8.4},
+            {area: 70, nzt: 8.6}, {area: 100, nzt: 8.8},
+        ],
+        "industrial": [
+            {area: 0.5, nzt: 8.0}, {area: 1, nzt: 8.3}, {area: 5, nzt: 9.2},
+            {area: 10, nzt: 9.6}, {area: 15, nzt: 9.8}, {area: 20, nzt: 10.0},
+            {area: 30, nzt: 10.2}, {area: 40, nzt: 10.4}, {area: 50, nzt: 10.6},
+            {area: 70, nzt: 10.8}, {area: 100, nzt: 11.0},
+        ],
+        "linear": [
+            {area: 0.5, nzt: 4.8}, {area: 1, nzt: 5.1}, {area: 5, nzt: 5.6},
+            {area: 10, nzt: 5.8}, {area: 15, nzt: 6.0}, {area: 20, nzt: 6.1},
+            {area: 30, nzt: 6.3}, {area: 40, nzt: 6.4}, {area: 50, nzt: 6.5},
+            {area: 70, nzt: 6.6}, {area: 100, nzt: 6.8}, {area: 200, nzt: 7.1},
+            {area: 300, nzt: 7.2},
+        ],
+    };
+
+    // Table 2.7 — НЗТ 5.6 (by object type)
+    const TABLE_2_7 = {
+        "civil": [
+            {area: 0.5, nzt: 9.0}, {area: 1, nzt: 9.4}, {area: 5, nzt: 10.5},
+            {area: 10, nzt: 11.0}, {area: 15, nzt: 11.3}, {area: 20, nzt: 11.5},
+            {area: 30, nzt: 11.9}, {area: 40, nzt: 12.1}, {area: 50, nzt: 12.3},
+            {area: 70, nzt: 12.6}, {area: 100, nzt: 12.9},
+        ],
+        "industrial": [
+            {area: 0.5, nzt: 11.2}, {area: 1, nzt: 11.7}, {area: 5, nzt: 12.9},
+            {area: 10, nzt: 13.4}, {area: 15, nzt: 13.7}, {area: 20, nzt: 14.0},
+            {area: 30, nzt: 14.3}, {area: 40, nzt: 14.6}, {area: 50, nzt: 14.8},
+            {area: 70, nzt: 15.1}, {area: 100, nzt: 15.4},
+        ],
+        "linear": [
+            {area: 0.5, nzt: 8.1}, {area: 1, nzt: 8.4}, {area: 5, nzt: 9.3},
+            {area: 10, nzt: 9.7}, {area: 15, nzt: 10.0}, {area: 20, nzt: 10.2},
+            {area: 30, nzt: 10.5}, {area: 40, nzt: 10.6}, {area: 50, nzt: 10.8},
+            {area: 70, nzt: 11.0}, {area: 100, nzt: 11.3}, {area: 200, nzt: 11.8},
+            {area: 300, nzt: 12.1},
+        ],
+    };
+
+    // Table 2.8 — НЗТ 5.7 (approx. 50% of Table 2.7)
+    const TABLE_2_8 = {
+        "civil": [
+            {area: 0.5, nzt: 4.5}, {area: 1, nzt: 4.7}, {area: 5, nzt: 5.25},
+            {area: 10, nzt: 5.5}, {area: 15, nzt: 5.65}, {area: 20, nzt: 5.75},
+            {area: 30, nzt: 5.95}, {area: 40, nzt: 6.05}, {area: 50, nzt: 6.15},
+            {area: 70, nzt: 6.3}, {area: 100, nzt: 6.45},
+        ],
+        "industrial": [
+            {area: 0.5, nzt: 5.6}, {area: 1, nzt: 5.85}, {area: 5, nzt: 6.45},
+            {area: 10, nzt: 6.7}, {area: 15, nzt: 6.85}, {area: 20, nzt: 7.0},
+            {area: 30, nzt: 7.15}, {area: 40, nzt: 7.3}, {area: 50, nzt: 7.4},
+            {area: 70, nzt: 7.55}, {area: 100, nzt: 7.7},
+        ],
+        "linear": [
+            {area: 0.5, nzt: 4.05}, {area: 1, nzt: 4.2}, {area: 5, nzt: 4.65},
+            {area: 10, nzt: 4.85}, {area: 15, nzt: 5.0}, {area: 20, nzt: 5.1},
+            {area: 30, nzt: 5.25}, {area: 40, nzt: 5.3}, {area: 50, nzt: 5.4},
+            {area: 70, nzt: 5.5}, {area: 100, nzt: 5.65}, {area: 200, nzt: 5.9},
+            {area: 300, nzt: 6.05},
+        ],
+    };
+
+    // Mapping: which area table to use for each НЗТ function
+    const NZT_AREA_TABLE_MAP = {
+        "5.4": "table25",
+        "5.5": "table26",
+        "5.6": "table27",
+        "5.7": "table28",
+    };
+
     // Table 1.1 — complex NZT with sub-functions
     // col1=Общее руководство проектированием, col2=Финансовый контроль,
     // col3=Технический надзор, col4=Общее руководство строительством, col5=Завершение строительства
@@ -560,10 +688,10 @@
                 {id: "5.1", label: "Обеспечение работ по контролю строительных работ", type: "simple"},
                 {id: "5.2", label: "Обеспечение выбора поставщиков оборудования", type: "simple"},
                 {id: "5.3", label: "Урегулирование прав на земельный участок", type: "simple"},
-                {id: "5.4", label: "Обеспечение выполнения обязательств по земельным участкам", type: "simple"},
-                {id: "5.5", label: "Обеспечение геодезических работ", type: "simple"},
-                {id: "5.6", label: "Обеспечение работ по обследованию строительных конструкций", type: "simple"},
-                {id: "5.7", label: "Обеспечение авторского сопровождения", type: "simple"},
+                {id: "5.4", label: "Обеспечение выполнения обязательств по земельным участкам", type: "area"},
+                {id: "5.5", label: "Обеспечение геодезических работ", type: "area"},
+                {id: "5.6", label: "Обеспечение работ по обследованию строительных конструкций", type: "area"},
+                {id: "5.7", label: "Обеспечение авторского сопровождения", type: "area"},
             ]
         },
         {
@@ -680,6 +808,7 @@
                             subDiv.querySelectorAll("input[type=checkbox]").forEach(c => c.checked = false);
                         }
                     }
+                    updateAreaInputsVisibility();
                     calculateNzt();
                 });
 
@@ -732,6 +861,71 @@
             }
         }
         return { id: table[table.length - 1].id, nzt: table[table.length - 1].nzt };
+    }
+
+    // Lookup area-based table with interpolation
+    function lookupAreaTable(area, table) {
+        if (!table || table.length === 0) return null;
+
+        // Below minimum
+        if (area <= table[0].area) {
+            return {
+                nzt: table[0].nzt,
+                exact: true,
+                detail: "Площадь=" + fmt(area, 2) + " га, НЗТ=" + fmt(table[0].nzt, 2) + " (мин. значение)"
+            };
+        }
+
+        // Above maximum
+        if (area >= table[table.length - 1].area) {
+            return {
+                nzt: table[table.length - 1].nzt,
+                exact: true,
+                detail: "Площадь=" + fmt(area, 2) + " га, НЗТ=" + fmt(table[table.length - 1].nzt, 2) + " (макс. значение)"
+            };
+        }
+
+        // Find surrounding rows
+        let lower = table[0];
+        let upper = table[1];
+        for (let i = 0; i < table.length - 1; i++) {
+            if (area >= table[i].area && area <= table[i + 1].area) {
+                lower = table[i];
+                upper = table[i + 1];
+                break;
+            }
+        }
+
+        // Exact match
+        if (area === lower.area) {
+            return { nzt: lower.nzt, exact: true, detail: "Площадь=" + fmt(area, 2) + " га, НЗТ=" + fmt(lower.nzt, 2) };
+        }
+        if (area === upper.area) {
+            return { nzt: upper.nzt, exact: true, detail: "Площадь=" + fmt(area, 2) + " га, НЗТ=" + fmt(upper.nzt, 2) };
+        }
+
+        // Interpolation
+        const nzt = lower.nzt + (upper.nzt - lower.nzt) / (upper.area - lower.area) * (area - lower.area);
+
+        return {
+            nzt: nzt,
+            exact: false,
+            detail: "Sмин=" + fmt(lower.area, 2) + " га, НЗТмин=" + fmt(lower.nzt, 2) + "\n" +
+                    "Sмакс=" + fmt(upper.area, 2) + " га, НЗТмакс=" + fmt(upper.nzt, 2) + "\n\n" +
+                    "Формула: НЗТ = НЗТмин + (НЗТмакс \u2212 НЗТмин) / (Sмакс \u2212 Sмин) \u00d7 (S \u2212 Sмин)\n" +
+                    "Расчёт: " + fmt(lower.nzt, 2) + " + (" + fmt(upper.nzt, 2) + " \u2212 " + fmt(lower.nzt, 2) + ") / (" +
+                    fmt(upper.area, 2) + " \u2212 " + fmt(lower.area, 2) + ") \u00d7 (" + fmt(area, 2) + " \u2212 " + fmt(lower.area, 2) + ") = " + fmt(nzt, 2)
+        };
+    }
+
+    // Get area table data for a given NZT id and object type
+    function getAreaTableData(nztId, objectType) {
+        const tableKey = NZT_AREA_TABLE_MAP[nztId];
+        if (tableKey === "table25") return TABLE_2_5; // same for all types
+        if (tableKey === "table26") return TABLE_2_6[objectType] || TABLE_2_6["civil"];
+        if (tableKey === "table27") return TABLE_2_7[objectType] || TABLE_2_7["civil"];
+        if (tableKey === "table28") return TABLE_2_8[objectType] || TABLE_2_8["civil"];
+        return null;
     }
 
     // Interpolate Table 1.1 — complex NZT
@@ -808,6 +1002,17 @@
         };
     }
 
+    // Show/hide area inputs based on whether any 5.4-5.7 is checked
+    function updateAreaInputsVisibility() {
+        const areaIds = ["5.4", "5.5", "5.6", "5.7"];
+        const anyChecked = areaIds.some(id => {
+            const cb = document.getElementById("nzt_" + id);
+            return cb && cb.checked;
+        });
+        const areaInputs = document.getElementById("nztAreaInputs");
+        if (areaInputs) areaInputs.style.display = anyChecked ? "block" : "none";
+    }
+
     // Calculate all checked NZT
     function calculateNzt() {
         const resultsDiv = document.getElementById("nztResults");
@@ -832,7 +1037,47 @@
             const nztId = cb.dataset.nztId;
             const nztType = cb.dataset.nztType;
 
-            if (nztType === "simple") {
+            if (nztType === "area") {
+                const objectType = document.getElementById("objectType").value;
+                const areaVal = parseFloat(document.getElementById("siteArea").value);
+
+                if (isNaN(areaVal) || areaVal <= 0) {
+                    const item = document.createElement("div");
+                    item.className = "nzt-result-item";
+                    item.innerHTML =
+                        '<div class="nzt-result-title">НЗТ ' + nztId + '</div>' +
+                        '<div class="nzt-result-detail" style="color: #e74c3c;">Введите площадь участка для расчёта</div>';
+                    listDiv.appendChild(item);
+                    hasResults = true;
+                    return;
+                }
+
+                const tableData = getAreaTableData(nztId, objectType);
+                if (!tableData) return;
+
+                const result = lookupAreaTable(areaVal, tableData);
+                if (!result) return;
+
+                const tableNames = {"5.4": "Табл. 2.5", "5.5": "Табл. 2.6", "5.6": "Табл. 2.7", "5.7": "Табл. 2.8"};
+                const typeNames = {"civil": "жилищно-гражд.", "industrial": "производств.", "linear": "линейный"};
+                const tableName = tableNames[nztId] || "";
+                const typeName = nztId === "5.4" ? "" : " (" + (typeNames[objectType] || objectType) + ")";
+
+                const item = document.createElement("div");
+                item.className = "nzt-result-item";
+
+                const detailLines = result.detail.split("\n").map(function(l) {
+                    return '<div class="nzt-result-detail">' + l + '</div>';
+                }).join("");
+
+                item.innerHTML =
+                    '<div class="nzt-result-title">НЗТ ' + nztId + ' — ' + tableName + typeName + '</div>' +
+                    detailLines +
+                    '<div class="nzt-result-value">НЗТ ' + nztId + ' = ' + fmt(result.nzt, 2) + ' чел.дн.</div>';
+                listDiv.appendChild(item);
+                totalNzt += result.nzt;
+                hasResults = true;
+            } else if (nztType === "simple") {
                 const table = NZT_TABLE_MAP[nztId] || TABLE_3_2;
                 const result = lookupSimpleTable(currentHor, table);
                 const item = document.createElement("div");
