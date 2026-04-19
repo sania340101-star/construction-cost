@@ -767,16 +767,18 @@
 
                 <!-- Налогообложение -->
                 <div id="taxSection" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e8eef5;">
-                    <div style="font-weight: 700; font-size: 14px; margin-bottom: 12px;">Налогообложение</div>
-                    <label style="display: block; padding: 8px 0; cursor: pointer;">
-                        <input type="radio" name="taxType" value="none" checked onchange="updateFinalPrice()"> Без учёта налогов
-                    </label>
-                    <label style="display: block; padding: 8px 0; cursor: pointer;">
-                        <input type="radio" name="taxType" value="usn" onchange="updateFinalPrice()"> УСН (включён в стоимость)
-                    </label>
-                    <label style="display: block; padding: 8px 0; cursor: pointer;">
-                        <input type="radio" name="taxType" value="nds" onchange="updateFinalPrice()"> НДС (20%)
-                    </label>
+                    <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">Налогообложение</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                        <label style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: #f5f7fa; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; transition: all 0.15s;">
+                            <input type="radio" name="taxType" value="none" checked onchange="updateFinalPrice()" style="margin: 0;"> Без налогов
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: #f5f7fa; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; transition: all 0.15s;">
+                            <input type="radio" name="taxType" value="usn" onchange="updateFinalPrice()" style="margin: 0;"> УСН
+                        </label>
+                        <label style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: #f5f7fa; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; transition: all 0.15s;">
+                            <input type="radio" name="taxType" value="nds" onchange="updateFinalPrice()" style="margin: 0;"> НДС 20%
+                        </label>
+                    </div>
                 </div>
 
                 <!-- Итоговая цена -->
