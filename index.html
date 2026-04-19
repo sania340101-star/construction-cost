@@ -522,6 +522,43 @@
             background: #e3f2fd;
             color: #1565c0;
         }
+
+        /* Иуслуга section */
+        .iusluga-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e8eef5;
+        }
+        .iusluga-section .result-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .iusluga-section .result-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+        .iusluga-section .result-detail {
+            font-size: 13px;
+            color: #888;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+        .iusluga-dates {
+            margin-top: 12px;
+        }
+        .iusluga-dates .row {
+            margin-bottom: 8px;
+        }
+        .iusluga-dates label {
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .iusluga-dates select {
+            font-size: 14px;
+            padding: 10px 12px;
+        }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -687,6 +724,73 @@
                     <div class="result-value" id="sustValue">451,89 руб.</div>
                     <div class="result-detail" id="sustDetail">(Стоимость 1 чел.-дн. работы специалиста 14 разряда,<br>Постановление МАиС №144 от 17.12.2025)</div>
                 </div>
+
+                <!-- Иуслуга section -->
+                <div class="iusluga-section" id="iuslugaSection" style="display: none;">
+                    <div class="result-label" style="font-weight: 700; font-size: 14px; margin-bottom: 12px;">Иуслуга (прогнозные индексы цен)</div>
+                    <div class="iusluga-dates">
+                        <div class="row">
+                            <div class="form-group">
+                                <label>Дата заключения договора (месяц)</label>
+                                <select id="contractMonth">
+                                    <option value="1">Январь</option>
+                                    <option value="2">Февраль</option>
+                                    <option value="3">Март</option>
+                                    <option value="4">Апрель</option>
+                                    <option value="5">Май</option>
+                                    <option value="6">Июнь</option>
+                                    <option value="7">Июль</option>
+                                    <option value="8">Август</option>
+                                    <option value="9">Сентябрь</option>
+                                    <option value="10">Октябрь</option>
+                                    <option value="11">Ноябрь</option>
+                                    <option value="12">Декабрь</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Год</label>
+                                <select id="contractYear">
+                                    <option value="2024">2024</option>
+                                    <option value="2025" selected>2025</option>
+                                    <option value="2026">2026</option>
+                                    <option value="2027">2027</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="form-group">
+                                <label>Дата окончания работ (месяц)</label>
+                                <select id="endMonth">
+                                    <option value="1">Январь</option>
+                                    <option value="2">Февраль</option>
+                                    <option value="3">Март</option>
+                                    <option value="4">Апрель</option>
+                                    <option value="5">Май</option>
+                                    <option value="6">Июнь</option>
+                                    <option value="7">Июль</option>
+                                    <option value="8">Август</option>
+                                    <option value="9">Сентябрь</option>
+                                    <option value="10">Октябрь</option>
+                                    <option value="11">Ноябрь</option>
+                                    <option value="12">Декабрь</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Год</label>
+                                <select id="endYear">
+                                    <option value="2025">2025</option>
+                                    <option value="2026" selected>2026</option>
+                                    <option value="2027">2027</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="calculateAndDisplayIusluga()" style="margin-top: 4px;">Рассчитать Иуслуга</button>
+                    <div id="iuslugaResult" style="display: none; margin-top: 12px;">
+                        <div class="result-value" id="iuslugaValue"></div>
+                        <div class="result-detail" id="iuslugaDetail"></div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -695,12 +799,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.4</div>
+        <div class="app-footer">Версия 2.5</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.4";
+    const APP_VERSION = "2.5";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -1698,10 +1802,15 @@
                 sustEl.style.display = "block";
                 updateSustDisplay();
             }
+            // Show Иуслуга section
+            if (typeof updateIuslugaVisibility === "function") updateIuslugaVisibility();
         } else {
             resultsDiv.style.display = "none";
             const sustEl = document.getElementById("nztSust");
             if (sustEl) sustEl.style.display = "none";
+            // Hide Иуслуга section
+            const iuslugaEl = document.getElementById("iuslugaSection");
+            if (iuslugaEl) iuslugaEl.style.display = "none";
         }
     }
 
@@ -1973,6 +2082,118 @@
         localStorage.removeItem(SUST_CACHE_KEY);
         // Re-fetch
         loadSust().then(() => calculateNzt());
+    }
+
+    // ========== Иуслуга (Forecast Price Indices) ==========
+
+    // Monthly forecast indices for "прочие затраты" (other costs)
+    // Source: Письмо МАиС от 21.03.2025 №04.3-05/4106
+    const FORECAST_INDICES = {
+        "2025": {
+            1: 1.0105, 2: 1.0105, 3: 1.0105,
+            4: 1.0144, 5: 1.0144, 6: 1.0144,
+            7: 1.0144, 8: 1.0144, 9: 1.0144,
+            10: 1.0144, 11: 1.0144, 12: 1.0144,
+        },
+        "2026": {
+            1: 1.0119, 2: 1.0119, 3: 1.0119, 4: 1.0119,
+            5: 1.0119, 6: 1.0119, 7: 1.0119, 8: 1.0119,
+            9: 1.0119, 10: 1.0119, 11: 1.0119, 12: 1.0119,
+        },
+        "2027": {
+            1: 1.0115, 2: 1.0115, 3: 1.0115, 4: 1.0115,
+            5: 1.0115, 6: 1.0115, 7: 1.0115, 8: 1.0115,
+            9: 1.0115, 10: 1.0115, 11: 1.0115, 12: 1.0115,
+        },
+    };
+
+    const MONTHS_RU_SHORT = [
+        "", "янв", "фев", "мар", "апр", "май", "июн",
+        "июл", "авг", "сен", "окт", "ноя", "дек"
+    ];
+
+    function calculateIusluga(contractYear, contractMonth, endYear, endMonth) {
+        // If work starts and ends in the same calendar year, Иуслуга = 1
+        if (contractYear === endYear) {
+            return { value: 1, detail: "Работы в пределах одного календарного года", indices: [] };
+        }
+
+        // If work crosses into next year(s), multiply forecast indices
+        // for each month from January of the next year to the end month
+        let iusluga = 1;
+        let indices = [];
+
+        // Start from January of the year AFTER contract year
+        let startYear = contractYear + 1;
+
+        for (let y = startYear; y <= endYear; y++) {
+            let startM = 1;
+            let endM = (y === endYear) ? endMonth : 12;
+
+            for (let m = startM; m <= endM; m++) {
+                const yearData = FORECAST_INDICES[String(y)];
+                if (yearData && yearData[m]) {
+                    const idx = yearData[m];
+                    iusluga *= idx;
+                    indices.push({ year: y, month: m, index: idx });
+                }
+            }
+        }
+
+        return { value: iusluga, detail: "", indices: indices };
+    }
+
+    function calculateAndDisplayIusluga() {
+        const contractYear = parseInt(document.getElementById("contractYear").value);
+        const contractMonth = parseInt(document.getElementById("contractMonth").value);
+        const endYear = parseInt(document.getElementById("endYear").value);
+        const endMonth = parseInt(document.getElementById("endMonth").value);
+
+        // Validate: end date must be >= contract date
+        if (endYear < contractYear || (endYear === contractYear && endMonth < contractMonth)) {
+            const resultDiv = document.getElementById("iuslugaResult");
+            resultDiv.style.display = "block";
+            document.getElementById("iuslugaValue").textContent = "";
+            document.getElementById("iuslugaDetail").innerHTML =
+                '<span style="color: #e74c3c; font-weight: 600;">Дата окончания работ должна быть позже даты заключения договора</span>';
+            return;
+        }
+
+        const result = calculateIusluga(contractYear, contractMonth, endYear, endMonth);
+        const resultDiv = document.getElementById("iuslugaResult");
+        resultDiv.style.display = "block";
+
+        document.getElementById("iuslugaValue").textContent = "Иуслуга = " + result.value.toFixed(4);
+
+        if (result.indices.length === 0) {
+            // Same year
+            document.getElementById("iuslugaDetail").innerHTML =
+                "(Работы в пределах одного календарного года)";
+        } else {
+            // Build detail string
+            const indexParts = result.indices.map(function(i) {
+                return i.index.toFixed(4);
+            });
+            const monthParts = result.indices.map(function(i) {
+                return MONTHS_RU_SHORT[i.month] + " " + i.year;
+            });
+
+            let detailHtml = "(Прогнозные индексы цен строительства для прочих затрат)<br>";
+            detailHtml += "Расчёт: " + indexParts.join(" × ") + " = " + result.value.toFixed(4);
+            detailHtml += " (" + monthParts.join(", ") + ")<br>";
+            detailHtml += "Письмо МАиС от 21.03.2025 №04.3-05/4106";
+
+            document.getElementById("iuslugaDetail").innerHTML = detailHtml;
+        }
+    }
+
+    // Show Иуслуга section when NZT results are visible
+    function updateIuslugaVisibility() {
+        const iuslugaEl = document.getElementById("iuslugaSection");
+        const nztResults = document.getElementById("nztResults");
+        if (iuslugaEl && nztResults) {
+            iuslugaEl.style.display = nztResults.style.display === "block" ? "block" : "none";
+        }
     }
 
     // Build NZT UI on load
