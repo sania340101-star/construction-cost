@@ -476,6 +476,51 @@
             .nzt-subfunctions { margin-left: 24px; padding: 10px 12px; }
             .nzt-result-detail { font-size: 12px; }
             .nzt-total-value { font-size: 18px; }
+        .nzt-sust .result-detail { font-size: 12px; }
+        }
+
+        /* Суст.норм-дн. section */
+        .nzt-sust {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e8eef5;
+        }
+        .nzt-sust .result-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 4px;
+        }
+        .nzt-sust .result-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+        .nzt-sust .result-detail {
+            font-size: 13px;
+            color: #888;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+        .sust-badge {
+            display: inline-block;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+            font-weight: 600;
+            vertical-align: middle;
+        }
+        .sust-badge.fetched {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .sust-badge.fallback {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        .sust-badge.manual {
+            background: #e3f2fd;
+            color: #1565c0;
         }
     </style>
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -542,6 +587,17 @@
                     </div>
                 </div>
                 <button class="settings-btn" onclick="handleChangePassword()">Сменить пароль</button>
+
+                <h3 style="margin-top: 24px;">Параметры расчёта</h3>
+                <div class="form-group">
+                    <label for="sustOverride">Суст.норм-дн. (руб.)</label>
+                    <input type="number" id="sustOverride" placeholder="Авто" step="0.01" min="0">
+                    <div style="font-size: 12px; color: #888; margin-top: 4px;">
+                        Оставьте пустым для автоматического обновления с snzt.by
+                    </div>
+                </div>
+                <button class="settings-btn" onclick="saveSustOverride()">Сохранить Суст</button>
+                <button class="settings-btn" style="background: #999; margin-top: 4px;" onclick="resetSustOverride()">Сбросить (авто)</button>
             </div>
         </div>
 
@@ -626,6 +682,11 @@
                     <div class="result-label">Итого НЗТ:</div>
                     <div class="nzt-total-value" id="nztTotalValue"></div>
                 </div>
+                <div class="nzt-sust" id="nztSust" style="display: none;">
+                    <div class="result-label">Суст.норм-дн. <span id="sustBadge" class="sust-badge fallback">по умолчанию</span></div>
+                    <div class="result-value" id="sustValue">451,89 руб.</div>
+                    <div class="result-detail" id="sustDetail">(Стоимость 1 чел.-дн. работы специалиста 14 разряда,<br>Постановление МАиС №144 от 17.12.2025)</div>
+                </div>
             </div>
         </div>
 
@@ -634,12 +695,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.3</div>
+        <div class="app-footer">Версия 2.4</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.3";
+    const APP_VERSION = "2.4";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -1631,8 +1692,16 @@
         if (hasResults) {
             resultsDiv.style.display = "block";
             document.getElementById("nztTotalValue").textContent = fmt(totalNzt, 2) + " чел.дн.";
+            // Show Суст section
+            const sustEl = document.getElementById("nztSust");
+            if (sustEl) {
+                sustEl.style.display = "block";
+                updateSustDisplay();
+            }
         } else {
             resultsDiv.style.display = "none";
+            const sustEl = document.getElementById("nztSust");
+            if (sustEl) sustEl.style.display = "none";
         }
     }
 
@@ -1769,8 +1838,148 @@
         calculateNzt();
     }
 
+    // ========== Суст.норм-дн. Auto-Fetch ==========
+
+    const SUST_CACHE_KEY = "sust_cache";
+    const SUST_OVERRIDE_KEY = "sust_override";
+    const SUST_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+    let currentSust = { value: 451.89, doc: "Постановление МАиС №144 от 17.12.2025", source: "fallback" };
+
+    async function fetchSust() {
+        const FALLBACK_SUST = 451.89;
+        const FALLBACK_DOC = "Постановление МАиС №144 от 17.12.2025";
+
+        try {
+            const proxyUrl = "https://api.allorigins.win/raw?url=";
+
+            // Step 1: Get the reference page
+            const page1 = await fetch(proxyUrl + encodeURIComponent("https://snzt.by/spravka.php?doc_id=001"));
+            if (!page1.ok) throw new Error("Failed to fetch page 1");
+            const html1 = await page1.text();
+
+            // Parse to find first document link
+            const linkMatch = html1.match(/_pir\/pir_normat_doc\.php\?doc_id=(\d+_\d+)/);
+            if (!linkMatch) throw new Error("Document link not found");
+
+            const docUrl = "https://snzt.by/_pir/pir_normat_doc.php?doc_id=" + linkMatch[1];
+
+            // Step 2: Fetch the actual document
+            const page2 = await fetch(proxyUrl + encodeURIComponent(docUrl));
+            if (!page2.ok) throw new Error("Failed to fetch document");
+            const html2 = await page2.text();
+
+            // Find monetary values — look for patterns like "NNN,NN" near "белорусск" or "руб"
+            const values = html2.match(/(\d+)[,.](\d{2})\s*(?:белорусск|руб)/gi);
+            if (values && values.length >= 2) {
+                // Second value is for engineering services / заказчик, застройщик
+                const match = values[1].match(/(\d+)[,.](\d{2})/);
+                if (match) {
+                    const sust = parseFloat(match[1] + "." + match[2]);
+                    // Extract document name
+                    const docMatch = html2.match(/Постановлени[ея]\s+.*?№\s*(\d+)/i);
+                    const dateMatch = html2.match(/от\s+(\d{2}\.\d{2}\.\d{4})/);
+                    const docName = "Постановление МАиС №" + (docMatch ? docMatch[1] : "?") + " от " + (dateMatch ? dateMatch[1] : "?");
+                    return { value: sust, doc: docName, source: "fetched" };
+                }
+            }
+            throw new Error("Values not found in document");
+        } catch (e) {
+            console.warn("Auto-fetch Суст failed, using fallback:", e.message);
+            return { value: FALLBACK_SUST, doc: FALLBACK_DOC, source: "fallback" };
+        }
+    }
+
+    async function loadSust() {
+        // Check for manual override first
+        const override = localStorage.getItem(SUST_OVERRIDE_KEY);
+        if (override) {
+            const data = JSON.parse(override);
+            currentSust = { value: data.value, doc: "Ручная настройка", source: "manual" };
+            updateSustDisplay();
+            return;
+        }
+
+        // Check cache
+        const cached = localStorage.getItem(SUST_CACHE_KEY);
+        if (cached) {
+            const data = JSON.parse(cached);
+            if (Date.now() - data.timestamp < SUST_CACHE_TTL) {
+                currentSust = { value: data.value, doc: data.doc, source: data.source || "fetched" };
+                updateSustDisplay();
+                return;
+            }
+        }
+
+        // Fetch from web
+        const result = await fetchSust();
+        currentSust = result;
+
+        // Cache the result
+        localStorage.setItem(SUST_CACHE_KEY, JSON.stringify({
+            value: result.value,
+            doc: result.doc,
+            source: result.source,
+            timestamp: Date.now()
+        }));
+
+        updateSustDisplay();
+    }
+
+    function updateSustDisplay() {
+        const valueEl = document.getElementById("sustValue");
+        const detailEl = document.getElementById("sustDetail");
+        const badgeEl = document.getElementById("sustBadge");
+
+        if (valueEl) valueEl.textContent = fmt(currentSust.value) + " руб.";
+        if (detailEl) detailEl.innerHTML = "(Стоимость 1 чел.-дн. работы специалиста 14 разряда,<br>" + currentSust.doc + ")";
+
+        if (badgeEl) {
+            if (currentSust.source === "fetched") {
+                badgeEl.textContent = "обновлено";
+                badgeEl.className = "sust-badge fetched";
+            } else if (currentSust.source === "manual") {
+                badgeEl.textContent = "вручную";
+                badgeEl.className = "sust-badge manual";
+            } else {
+                badgeEl.textContent = "по умолчанию";
+                badgeEl.className = "sust-badge fallback";
+            }
+        }
+
+        // Update settings field
+        const overrideInput = document.getElementById("sustOverride");
+        if (overrideInput && currentSust.source === "manual") {
+            overrideInput.value = currentSust.value;
+        }
+    }
+
+    function saveSustOverride() {
+        const input = document.getElementById("sustOverride");
+        const val = parseFloat(input.value);
+        if (isNaN(val) || val <= 0) {
+            alert("Введите корректное значение Суст");
+            return;
+        }
+        localStorage.setItem(SUST_OVERRIDE_KEY, JSON.stringify({ value: val }));
+        currentSust = { value: val, doc: "Ручная настройка", source: "manual" };
+        updateSustDisplay();
+        // Recalculate NZT if visible
+        calculateNzt();
+    }
+
+    function resetSustOverride() {
+        localStorage.removeItem(SUST_OVERRIDE_KEY);
+        localStorage.removeItem(SUST_CACHE_KEY);
+        // Re-fetch
+        loadSust().then(() => calculateNzt());
+    }
+
     // Build NZT UI on load
     buildNztCheckboxes();
+
+    // Load Суст on page load
+    loadSust();
     </script>
 </body>
 </html>
