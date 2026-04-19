@@ -771,12 +771,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.9</div>
+        <div class="app-footer">Версия 2.10</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.9";
+    const APP_VERSION = "2.10";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -1774,8 +1774,9 @@
                 sustEl.style.display = "block";
                 updateSustDisplay();
             }
-            // Show Иуслуга section
+            // Show Иуслуга section + update Цпредл
             if (typeof updateIuslugaVisibility === "function") updateIuslugaVisibility();
+            if (typeof updateCpredl === "function") updateCpredl();
         } else {
             resultsDiv.style.display = "none";
             const sustEl = document.getElementById("nztSust");
