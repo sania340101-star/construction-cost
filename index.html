@@ -275,6 +275,34 @@
             font-weight: 700;
             color: #4a7cff;
         }
+        .nzt-source-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin: 8px 0;
+        }
+        .nzt-source-table th {
+            background: #4a7cff;
+            color: #fff;
+            padding: 4px 8px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .nzt-source-table td {
+            padding: 4px 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .nzt-source-table tr.highlighted {
+            background: #e8f0fe;
+            font-weight: 600;
+        }
+        .nzt-source-table caption {
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            color: #333;
+            padding: 4px 0;
+        }
 
         /* Mobile adaptations */
         @media (max-width: 480px) {
@@ -1019,6 +1047,100 @@
         if (areaInputs) areaInputs.style.display = anyChecked ? "block" : "none";
     }
 
+    // Table name mappings for simple NZT
+    const SIMPLE_TABLE_NAMES = {
+        "6.1": "Табл. 3.1", "6.3": "Табл. 3.1", "6.4": "Табл. 3.1",
+        "6.5": "Табл. 3.2",
+        "6.2": "Табл. 3.3",
+        "6.6": "Табл. 3.4",
+    };
+
+    // Cost range labels for simple tables
+    function getCostRangeLabel(table, idx) {
+        const row = table[idx];
+        if (idx === 0) return "до " + fmt(row.maxCost, 0);
+        const prev = table[idx - 1].maxCost;
+        if (row.maxCost === Infinity) return "свыше " + fmt(prev, 0);
+        return "от " + fmt(prev, 0) + " до " + fmt(row.maxCost, 0);
+    }
+
+    // Build HTML table for simple NZT (Tables 3.1-3.4)
+    function buildSimpleSourceTable(table, tableName, matchedId) {
+        let html = '<table class="nzt-source-table">';
+        html += '<caption>' + tableName + '</caption>';
+        html += '<tr><th>Идентиф.</th><th>Стоимость, тыс. руб.</th><th>НЗТ, чел.дн.</th></tr>';
+        for (let i = 0; i < table.length; i++) {
+            const row = table[i];
+            const hl = row.id === matchedId ? ' class="highlighted"' : '';
+            html += '<tr' + hl + '><td>' + row.id + '</td><td>' + getCostRangeLabel(table, i) + '</td><td>' + fmt(row.nzt, 1) + '</td></tr>';
+        }
+        html += '</table>';
+        return html;
+    }
+
+    // Build HTML table for area-based NZT (Tables 2.5-2.8)
+    function buildAreaSourceTable(tableData, tableName, area) {
+        // Find the two interpolation rows
+        let lowerIdx = -1, upperIdx = -1;
+        if (area <= tableData[0].area) {
+            lowerIdx = 0;
+        } else if (area >= tableData[tableData.length - 1].area) {
+            lowerIdx = tableData.length - 1;
+        } else {
+            for (let i = 0; i < tableData.length - 1; i++) {
+                if (area >= tableData[i].area && area <= tableData[i + 1].area) {
+                    lowerIdx = i;
+                    upperIdx = i + 1;
+                    break;
+                }
+            }
+        }
+
+        let html = '<table class="nzt-source-table">';
+        html += '<caption>' + tableName + '</caption>';
+        html += '<tr><th>Площадь, га</th><th>НЗТ, чел.дн.</th></tr>';
+        for (let i = 0; i < tableData.length; i++) {
+            const row = tableData[i];
+            const hl = (i === lowerIdx || i === upperIdx) ? ' class="highlighted"' : '';
+            html += '<tr' + hl + '><td>' + fmt(row.area, 1) + '</td><td>' + fmt(row.nzt, 2) + '</td></tr>';
+        }
+        html += '</table>';
+        return html;
+    }
+
+    // Build HTML table for complex NZT 9.1 (Table 1.1) — only 2 interpolation rows
+    function buildComplexSourceTable(result, selectedCols) {
+        const colHeaders = ['Идентиф.', 'Хор, тыс.руб.'];
+        const colKeys = ['id', 'cost'];
+        selectedCols.forEach(ci => {
+            // Short column names
+            const shortNames = ['Рук.пр.', 'Фин.к.', 'Тех.н.', 'Рук.стр.', 'Заверш.'];
+            colHeaders.push(shortNames[ci]);
+        });
+
+        let rows = [];
+        if (result.exact) {
+            rows = [result.row];
+        } else {
+            rows = [result.lower, result.upper];
+        }
+
+        let html = '<table class="nzt-source-table">';
+        html += '<caption>Табл. 1.1</caption>';
+        html += '<tr>';
+        colHeaders.forEach(h => { html += '<th>' + h + '</th>'; });
+        html += '</tr>';
+        rows.forEach(row => {
+            html += '<tr class="highlighted"><td>' + row.id + '</td><td>' + fmt(row.cost, 2) + '</td>';
+            selectedCols.forEach(ci => {
+                html += '<td>' + fmt(row[TABLE_1_1_COLS[ci]], 1) + '</td>';
+            });
+            html += '</tr>';
+        });
+        html += '</table>';
+        return html;
+    }
+
     // Calculate all checked NZT
     function calculateNzt() {
         const resultsDiv = document.getElementById("nztResults");
@@ -1076,9 +1198,12 @@
                     return '<div class="nzt-result-detail">' + l + '</div>';
                 }).join("");
 
+                const areaTableHtml = buildAreaSourceTable(tableData, tableName, areaVal);
+
                 item.innerHTML =
                     '<div class="nzt-result-title">НЗТ ' + nztId + ' — ' + tableName + typeName + '</div>' +
                     detailLines +
+                    areaTableHtml +
                     '<div class="nzt-result-value">НЗТ ' + nztId + ' = ' + fmt(result.nzt, 2) + ' чел.дн.</div>';
                 listDiv.appendChild(item);
                 totalNzt += result.nzt;
@@ -1086,11 +1211,14 @@
             } else if (nztType === "simple") {
                 const table = NZT_TABLE_MAP[nztId] || TABLE_3_2;
                 const result = lookupSimpleTable(currentHor, table);
+                const simpleTableName = SIMPLE_TABLE_NAMES[nztId] || "Табл. 3.2";
+                const simpleTableHtml = buildSimpleSourceTable(table, simpleTableName, result.id);
                 const item = document.createElement("div");
                 item.className = "nzt-result-item";
                 item.innerHTML =
                     '<div class="nzt-result-title">НЗТ ' + nztId + '</div>' +
                     '<div class="nzt-result-detail">' + result.id + ': Хор=' + fmt(currentHor, 2) + ' тыс. руб.</div>' +
+                    simpleTableHtml +
                     '<div class="nzt-result-value">НЗТ ' + nztId + ' = ' + fmt(result.nzt, 2) + ' чел.дн.</div>';
                 listDiv.appendChild(item);
                 totalNzt += result.nzt;
@@ -1123,10 +1251,12 @@
 
                     const selectedNames = selectedCols.map(i => TABLE_1_1_COL_NAMES[i]).join(", ");
                     const detailLines = result.detail.split("\n").map(l => '<div class="nzt-result-detail">' + l + '</div>').join("");
+                    const complexTableHtml = buildComplexSourceTable(result, selectedCols);
 
                     item.innerHTML =
                         '<div class="nzt-result-title">НЗТ 9.1 — ' + selectedNames + '</div>' +
                         detailLines +
+                        complexTableHtml +
                         '<div class="nzt-result-value">НЗТ 9.1 = ' + fmt(result.nzt, 2) + ' чел.дн.</div>';
                     listDiv.appendChild(item);
                     totalNzt += result.nzt;
