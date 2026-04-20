@@ -768,14 +768,14 @@
                 <!-- Налогообложение -->
                 <div id="taxSection" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 1px solid #e8eef5;">
                     <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">Налогообложение</div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-                        <label style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: #f5f7fa; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; transition: all 0.15s;">
+                    <div style="display: flex; flex-direction: column; gap: 6px;">
+                        <label style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #f5f7fa; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; transition: all 0.15s;">
                             <input type="radio" name="taxType" value="none" checked onchange="updateFinalPrice()" style="margin: 0;"> Без налогов
                         </label>
-                        <label style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: #f5f7fa; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; transition: all 0.15s;">
+                        <label style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #f5f7fa; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; transition: all 0.15s;">
                             <input type="radio" name="taxType" value="usn" onchange="updateFinalPrice()" style="margin: 0;"> УСН
                         </label>
-                        <label style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: #f5f7fa; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; transition: all 0.15s;">
+                        <label style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #f5f7fa; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; transition: all 0.15s;">
                             <input type="radio" name="taxType" value="nds" onchange="updateFinalPrice()" style="margin: 0;"> НДС 20%
                         </label>
                     </div>
@@ -783,13 +783,13 @@
 
                 <!-- Итоговая цена -->
                 <div id="finalPriceSection" style="display: none; margin-top: 16px; padding-top: 16px; border-top: 2px solid #10b981;">
-                    <div id="ndsLine" style="display: none; margin-bottom: 8px;">
-                        <span style="font-size: 14px;">НДС (20%): </span>
-                        <span style="font-weight: 600;" id="ndsValue"></span>
+                    <div id="ndsLine" style="display: none; margin-bottom: 10px;">
+                        <div style="font-size: 13px; color: #666; margin-bottom: 2px;">НДС (20%):</div>
+                        <div style="font-size: 18px; font-weight: 600;" id="ndsValue"></div>
                     </div>
-                    <div style="font-size: 14px; color: #666;" id="finalPriceLabel"></div>
-                    <div style="font-size: 24px; font-weight: 700; color: #10b981;" id="finalPriceValue"></div>
-                    <div style="font-size: 14px; color: #555; margin-top: 8px; font-style: italic;" id="finalPriceWords"></div>
+                    <div style="font-size: 13px; color: #666; margin-bottom: 2px;" id="finalPriceLabel"></div>
+                    <div style="font-size: 24px; font-weight: 700; color: #10b981; margin-bottom: 10px;" id="finalPriceValue"></div>
+                    <div style="font-size: 14px; color: #555; font-style: italic; line-height: 1.5;" id="finalPriceWords"></div>
                 </div>
 
                 <!-- Excel export -->
@@ -1314,7 +1314,7 @@
     ];
 
     // Global state
-    let currentHor = 0; // Хор in thousands of rubles
+    let currentHor = 0; // Хоб in thousands of rubles
 
     // Populate year selector
     const yearSel = document.getElementById("year");
@@ -1572,7 +1572,7 @@
             nzt: nzt,
             detail: lower.id + ": Хмин = " + fmt(xMin, 2) + ", НЗТмин = " + fmt(nztMin, 2) + "\n" +
                     upper.id + ": Хмакс = " + fmt(xMax, 2) + ", НЗТмакс = " + fmt(nztMax, 2) + "\n\n" +
-                    "Формула: НЗТ = НЗТмин + (НЗТмакс \u2212 НЗТмин) / (Хмакс \u2212 Хмин) \u00d7 (Хор \u2212 Хмин)\n" +
+                    "Формула: НЗТ = НЗТмин + (НЗТмакс \u2212 НЗТмин) / (Хмакс \u2212 Хмин) \u00d7 (Хоб \u2212 Хмин)\n" +
                     "Расчёт: " + fmt(nztMin, 2) + " + (" + fmt(nztMax, 2) + " \u2212 " + fmt(nztMin, 2) + ") / (" +
                     fmt(xMax, 2) + " \u2212 " + fmt(xMin, 2) + ") \u00d7 (" + fmt(hor, 2) + " \u2212 " + fmt(xMin, 2) + ") = " + fmt(nzt, 2)
         };
@@ -1652,7 +1652,7 @@
 
     // Build HTML table for complex NZT 9.1 (Table 1.1) — only 2 interpolation rows
     function buildComplexSourceTable(result, selectedCols) {
-        const colHeaders = ['Идентиф.', 'Хор, тыс.руб.'];
+        const colHeaders = ['Идентиф.', 'Хоб, тыс.руб.'];
         const colKeys = ['id', 'cost'];
         selectedCols.forEach(ci => {
             // Short column names
@@ -1759,7 +1759,7 @@
                 item.className = "nzt-result-item";
                 item.innerHTML =
                     '<div class="nzt-result-title">НЗТ ' + nztId + '</div>' +
-                    '<div class="nzt-result-detail">' + result.id + ': Хор=' + fmt(currentHor, 2) + ' тыс. руб.</div>' +
+                    '<div class="nzt-result-detail">' + result.id + ': Хоб=' + fmt(currentHor, 2) + ' тыс. руб.</div>' +
                     simpleTableHtml +
                     '<div class="nzt-result-value">НЗТ ' + nztId + ' = ' + fmt(result.nzt, 2) + ' чел.дн.</div>';
                 listDiv.appendChild(item);
@@ -1916,7 +1916,7 @@
             finalCost = cost / factIndex;
         }
 
-        // Store Хор for NZT calculations
+        // Store Хоб for NZT calculations
         currentHor = finalCost;
 
         // Display results
@@ -1949,7 +1949,7 @@
         }
 
         document.getElementById("finalLabel").textContent =
-            "Предельная стоимость строительства на 01.01.2025 (Хор)";
+            "Предельная стоимость строительства на 01.01.2025 (Хоб)";
         document.getElementById("finalValue").textContent =
             `${fmt(finalCost)} тыс. руб.`;
 
@@ -2478,7 +2478,12 @@
 
         const horValue = parseFormatted(finalValue);
         const sustVal = parseFormatted(document.getElementById("sustValue").textContent);
-        const sustDetail = document.getElementById("sustDetail").textContent.replace(/<br\/?>/g, " ");
+        const sustDetailEl = document.getElementById("sustDetail");
+        const sustDetailHTML = sustDetailEl ? sustDetailEl.innerHTML : "";
+        const sustParts = sustDetailHTML.split(/<br\s*\/?>/i);
+        const sustDescription = (sustParts[0] || "").replace(/^\(/, "").trim();
+        const sustDoc = sustParts[1] ? sustParts[1].replace(/\).*$/, "").trim() : "";
+        const sustDetail = sustDescription + (sustDoc ? " " + sustDoc : "");
 
         const iuslugaEl = document.getElementById("iuslugaValue");
         const iuslugaVal = iuslugaEl ? parseFormatted(iuslugaEl.textContent) : 1;
@@ -2504,14 +2509,17 @@
             const label = cb.parentElement.textContent.trim();
             const resultEls = document.querySelectorAll(".nzt-result-item");
             let nztVal = 0;
+            let nztDetail = "";
             resultEls.forEach(el => {
                 const titleEl = el.querySelector(".nzt-result-title");
                 const valEl = el.querySelector(".nzt-result-value");
+                const detailEl = el.querySelector(".nzt-result-detail");
                 if (titleEl && titleEl.textContent.includes("НЗТ " + nztId) && valEl) {
                     nztVal = parseFormatted(valEl.textContent);
+                    nztDetail = detailEl ? detailEl.textContent : "";
                 }
             });
-            nztItems.push({ id: nztId, label: label.replace(/^НЗТ\s*\d+\.\d+\s*[-–—]\s*/, ""), value: nztVal });
+            nztItems.push({ id: nztId, label: label.replace(/^НЗТ\s*\d+\.\d+\s*[-–—]\s*/, ""), value: nztVal, detail: nztDetail });
         });
 
         const totalNzt = parseFormatted(document.getElementById("nztTotalValue").textContent);
@@ -2623,26 +2631,59 @@
         rows[r] = { hpt: 36 };
         r++;
 
+        // Helper: parse NZT interpolation detail into sub-rows
+        function parseNztSubRows(detail) {
+            if (!detail) return [];
+            const lines = detail.split('\n');
+            // Pattern: "id: Хмин = x.xx, НЗТмин = n.nn"
+            const m1 = lines[0] && lines[0].match(/^(.+?):\s*Хмин\s*[=:]\s*([\d.]+),\s*НЗТмин\s*[=:]\s*([\d.]+)/);
+            const m2 = lines[1] && lines[1].match(/^(.+?):\s*Хмакс\s*[=:]\s*([\d.]+),\s*НЗТмакс\s*[=:]\s*([\d.]+)/);
+            if (!m1 || !m2) return [];
+            const id1 = m1[1].trim(), xMin = parseFloat(m1[2]), nztMin = parseFloat(m1[3]);
+            const id2 = m2[1].trim(), xMax = parseFloat(m2[2]), nztMax = parseFloat(m2[3]);
+            return [
+                { col2: id1,    col4: "Хмин         " + fmt(xMin, 2) },
+                { col2: id2,    col4: "Хмакс       " + fmt(xMax, 2) },
+                { col2: nztMin, col4: "НЗТ мин    " + fmt(nztMin, 2) },
+                { col2: nztMax, col4: "НЗТ макс   " + fmt(nztMax, 2) }
+            ];
+        }
+
         // NZT rows
         const nztStartRow = r;
+        const nztFormula = "НЗТ=НЗТмин+(НЗТмакс-НЗТмин) / /(Хмакс-Хмин)*(Хоб-Хмин)";
         nztItems.forEach(item => {
+            const subRows = parseNztSubRows(item.detail);
+            const hasInterp = subRows.length > 0;
             setCell(r, 0, tblCellBold("НЗТ  " + item.id));
             setCell(r, 1, tblCellBold("чел-дн"));
-            setCell(r, 2, tblCell("Сборник норм затрат трудовых ресурсов НЗТ 8.02.ИО-2023"));
+            setCell(r, 2, tblCell("Сборник норм затрат трудовых ресурсов НЗТ 8.02.ИО-2023 (таблица 1.1.)"));
             setCell(r, 3, emptyBorder());
-            setCell(r, 4, emptyBorder());
+            setCell(r, 4, hasInterp ? tblCell(nztFormula) : emptyBorder());
             setCell(r, 5, tblCellBold(item.value));
             merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
             rows[r] = { hpt: 50 };
             r++;
+            // Sub-rows with min/max details
+            subRows.forEach(sr => {
+                setCell(r, 0, emptyBorder());
+                setCell(r, 1, emptyBorder());
+                setCell(r, 2, typeof sr.col2 === "number" ? tblCell(sr.col2, { alignment: alignCC }) : tblCell(sr.col2));
+                setCell(r, 3, emptyBorder());
+                setCell(r, 4, tblCell(sr.col4));
+                setCell(r, 5, emptyBorder());
+                merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+                rows[r] = { hpt: 18 };
+                r++;
+            });
         });
 
         // Суст
         setCell(r, 0, tblCellBold("Суст.норм-дн."));
         setCell(r, 1, tblCellBold("руб."));
-        setCell(r, 2, tblCell(sustDetail));
+        setCell(r, 2, tblCell(sustDescription || sustDetail));
         setCell(r, 3, emptyBorder());
-        setCell(r, 4, emptyBorder());
+        setCell(r, 4, sustDoc ? tblCell(sustDoc) : emptyBorder());
         setCell(r, 5, tblCell(sustVal, { alignment: alignCC }));
         merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
         rows[r] = { hpt: 32 };
@@ -2671,7 +2712,7 @@
         r++;
 
         // Цпредл
-        const cpredlFormulaText = "Цпредл = ΣНЗТ × Суст × (1 + 0,5 × (Iуслуга − 1)) × Кконкурс";
+        const cpredlFormulaText = "Цпредл = \u00B9\u00B2(\u043A\u0440\u043E\u043C\u0435 11)\u2211(\u041D\u0417\u0422*\u0421 \u0443\u0441\u0442./\u043D\u043E\u0440\u043C-\u0434\u043D*(1+0,5*(\u0418\u0443\u0441\u043B\u0443\u0433\u0430-1)*\u041A\u043A\u043E\u043D\u043A\u0443\u0440\u0441)";
         setCell(r, 0, tblCell("Цпредл", { alignment: alignCC }));
         setCell(r, 1, tblCell("руб.", { alignment: alignCC }));
         setCell(r, 2, tblCell("Цена предложения услуг (НЗТ8.02.ИО-2023 п.44)"));
@@ -2689,7 +2730,7 @@
             setCell(r, 1, tblCell("руб.", { alignment: alignCC }));
             setCell(r, 2, emptyBorder());
             setCell(r, 3, emptyBorder());
-            setCell(r, 4, tblCell("0.2"));
+            setCell(r, 4, tblCell(0.2, { alignment: alignCC }));
             setCell(r, 5, tblCellBold(Math.round(nds * 100) / 100));
             merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
             rows[r] = { hpt: 18 };
