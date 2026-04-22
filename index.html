@@ -770,13 +770,13 @@
                     <div style="font-weight: 700; font-size: 14px; margin-bottom: 8px;">Налогообложение</div>
                     <div style="display: flex; flex-direction: column; gap: 6px;">
                         <label style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #f5f7fa; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; transition: all 0.15s;">
-                            <input type="radio" name="taxType" value="none" checked onchange="updateFinalPrice()" style="margin: 0;"> Без налогов
+                            <input type="radio" name="taxType" value="none" checked onchange="updateFinalPrice()" style="margin: 0; width: auto; flex-shrink: 0;"> Без налогов
                         </label>
                         <label style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #f5f7fa; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; transition: all 0.15s;">
-                            <input type="radio" name="taxType" value="usn" onchange="updateFinalPrice()" style="margin: 0;"> УСН
+                            <input type="radio" name="taxType" value="usn" onchange="updateFinalPrice()" style="margin: 0; width: auto; flex-shrink: 0;"> УСН
                         </label>
                         <label style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; background: #f5f7fa; border-radius: 8px; cursor: pointer; font-size: 14px; border: 2px solid transparent; transition: all 0.15s;">
-                            <input type="radio" name="taxType" value="nds" onchange="updateFinalPrice()" style="margin: 0;"> НДС 20%
+                            <input type="radio" name="taxType" value="nds" onchange="updateFinalPrice()" style="margin: 0; width: auto; flex-shrink: 0;"> НДС 20%
                         </label>
                     </div>
                 </div>
@@ -813,12 +813,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.16</div>
+        <div class="app-footer">Версия 2.17</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.16";
+    const APP_VERSION = "2.17";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -1033,11 +1033,12 @@
 
     // Table 3.1 — 6.1 (разработчик предпроектной), 6.3 (генпроектная), 6.4 (генподрядная)
     const TABLE_3_1 = [
-        {id: "И030101а", maxCost: 1000, nzt: 8.0},
-        {id: "И030102а", maxCost: 10000, nzt: 9.5},
-        {id: "И030103а", maxCost: 50000, nzt: 11.5},
-        {id: "И030104а", maxCost: 100000, nzt: 15.5},
-        {id: "И030105а", maxCost: Infinity, nzt: 19.0},
+        {id: "И030101a", maxCost: 500, nzt: 4.0},
+        {id: "И030102a", maxCost: 1000, nzt: 8.0},
+        {id: "И030103a", maxCost: 10000, nzt: 9.5},
+        {id: "И030104a", maxCost: 50000, nzt: 11.5},
+        {id: "И030105a", maxCost: 100000, nzt: 15.5},
+        {id: "И030106a", maxCost: Infinity, nzt: 19.0},
     ];
 
     // Table 3.2 — 6.5 (подрядные на отдельные виды работ)
@@ -1225,8 +1226,8 @@
         {
             group: "1. Работы по подготовке стройки:",
             items: [
-                {id: "1.1", label: "Обеспечение проработки инвестиционного замысла", type: "simple"},
-                {id: "1.2", label: "Разработка и согласование задания на предпроектную документацию", type: "simple"},
+                {id: "1.1", label: "Обеспечение проработки инвестиционного замысла и выбора оптимального решения", type: "simple"},
+                {id: "1.2", label: "Разработка и согласование задания на разработку предпроектной документации", type: "simple"},
                 {id: "1.3", label: "Разработка и согласование декларации о намерениях", type: "simple"},
             ]
         },
