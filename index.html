@@ -813,12 +813,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.21</div>
+        <div class="app-footer">Версия 2.22</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.21";
+    const APP_VERSION = "2.22";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -2666,17 +2666,22 @@
         function parseNztSubRows(detail) {
             if (!detail) return [];
             const lines = detail.split('\n');
-            // Pattern: "id: Хмин = x.xx, НЗТмин = n.nn"
-            const m1 = lines[0] && lines[0].match(/^(.+?):\s*Хмин\s*[=:]\s*([\d.]+),\s*НЗТмин\s*[=:]\s*([\d.]+)/);
-            const m2 = lines[1] && lines[1].match(/^(.+?):\s*Хмакс\s*[=:]\s*([\d.]+),\s*НЗТмакс\s*[=:]\s*([\d.]+)/);
+            // num pattern supports both period and comma as decimal separator (Russian locale)
+            const num = /[\d]+(?:[,.][\d]+)?/;
+            const p1 = new RegExp('^(.+?):\\s*Хмин\\s*[=:]\\s*(' + num.source + '),\\s*НЗТмин\\s*[=:]\\s*(' + num.source + ')');
+            const p2 = new RegExp('^(.+?):\\s*Хмакс\\s*[=:]\\s*(' + num.source + '),\\s*НЗТмакс\\s*[=:]\\s*(' + num.source + ')');
+            const m1 = lines[0] && lines[0].match(p1);
+            const m2 = lines[1] && lines[1].match(p2);
             if (!m1 || !m2) return [];
-            const id1 = m1[1].trim(), xMin = parseFloat(m1[2]), nztMin = parseFloat(m1[3]);
-            const id2 = m2[1].trim(), xMax = parseFloat(m2[2]), nztMax = parseFloat(m2[3]);
+            function pf(s) { return parseFloat(s.replace(',', '.')); }
+            function fmtV(n) { return n.toLocaleString("ru-RU", { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+            const id1 = m1[1].trim(), xMin = pf(m1[2]), nztMin = pf(m1[3]);
+            const id2 = m2[1].trim(), xMax = pf(m2[2]), nztMax = pf(m2[3]);
             return [
-                { col2: id1,    col4: "Хмин         " + fmt(xMin, 2) },
-                { col2: id2,    col4: "Хмакс       " + fmt(xMax, 2) },
-                { col2: nztMin, col4: "НЗТ мин    " + fmt(nztMin, 2) },
-                { col2: nztMax, col4: "НЗТ макс   " + fmt(nztMax, 2) }
+                { col2: id1,    col4: "Хмин         " + fmtV(xMin) },
+                { col2: id2,    col4: "Хмакс       " + fmtV(xMax) },
+                { col2: nztMin, col4: "НЗТ мин    " + fmtV(nztMin) },
+                { col2: nztMax, col4: "НЗТ макс   " + fmtV(nztMax) }
             ];
         }
 
