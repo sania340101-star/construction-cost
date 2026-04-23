@@ -813,12 +813,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.20</div>
+        <div class="app-footer">Версия 2.21</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.20";
+    const APP_VERSION = "2.21";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -2543,7 +2543,10 @@
                 const valEl = el.querySelector(".nzt-result-value");
                 const detailEls = el.querySelectorAll(".nzt-result-detail");
                 if (titleEl && titleEl.textContent.includes("НЗТ " + nztId) && valEl) {
-                    nztVal = parseFormatted(valEl.textContent);
+                    // Extract value after "=" to avoid matching the NZT ID number (e.g. "НЗТ 9.1 = 0,95" → 0.95)
+                    const valText = valEl.textContent;
+                    const eqMatch = valText.match(/=\s*([\d,.\s]+)/);
+                    nztVal = eqMatch ? parseFormatted(eqMatch[1]) : parseFormatted(valText);
                     nztDetail = Array.from(detailEls).map(d => d.textContent).join("\n");
                 }
             });
