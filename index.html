@@ -813,12 +813,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.22</div>
+        <div class="app-footer">Версия 2.23</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.22";
+    const APP_VERSION = "2.23";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -2691,6 +2691,7 @@
         nztItems.forEach(item => {
             const subRows = parseNztSubRows(item.detail);
             const hasInterp = subRows.length > 0;
+            const rowStart = r;
             setCell(r, 0, tblCellBold("НЗТ  " + item.id));
             setCell(r, 1, tblCellBold("чел-дн"));
             setCell(r, 2, tblCell("Сборник норм затрат трудовых ресурсов НЗТ 8.02.ИО-2023 (таблица 1.1.)"));
@@ -2712,6 +2713,11 @@
                 rows[r] = { hpt: 18 };
                 r++;
             });
+            // Merge col 0 and col 5 vertically across main row + sub-rows
+            if (hasInterp) {
+                merges.push({ s: {r:rowStart,c:0}, e: {r:r-1,c:0} });
+                merges.push({ s: {r:rowStart,c:5}, e: {r:r-1,c:5} });
+            }
         });
 
         // Суст
