@@ -813,12 +813,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.25</div>
+        <div class="app-footer">Версия 2.26</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.25";
+    const APP_VERSION = "2.26";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -2755,7 +2755,7 @@
         setCell(r, 2, tblCell("Пункт 44 НЗТ 8.02.ИО.2023 в редакции Приказа МАиС от 17.07.2025 №89"));
         setCell(r, 3, emptyBorder());
         setCell(r, 4, iuslugaCol4 ? tblCell(iuslugaCol4) : emptyBorder());
-        setCell(r, 5, tblCell(iuslugaVal.toFixed(iuslugaDecimals).replace(".", ","), { alignment: alignCC }));
+        setCell(r, 5, tblCell(iuslugaVal, { alignment: alignCC, numFmt: iuslugaHasIndices ? "0.0000" : "0.00" }));
         merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
         rows[r] = { hpt: 36 };
         r++;
@@ -2766,7 +2766,7 @@
         setCell(r, 2, tblCell("Пункт 44 НЗТ 8.02.ИО.2023"));
         setCell(r, 3, emptyBorder());
         setCell(r, 4, emptyBorder());
-        setCell(r, 5, tblCell(kkonkurs.toFixed(2).replace(".", ","), { alignment: alignCC }));
+        setCell(r, 5, tblCell(kkonkurs, { alignment: alignCC, numFmt: "0.00" }));
         merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
         rows[r] = { hpt: 30 };
         r++;
