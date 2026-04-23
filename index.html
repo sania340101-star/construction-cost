@@ -813,12 +813,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.23</div>
+        <div class="app-footer">Версия 2.24</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.23";
+    const APP_VERSION = "2.24";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -2516,9 +2516,27 @@
         const iuslugaEl = document.getElementById("iuslugaValue");
         const iuslugaVal = iuslugaEl ? parseFormatted(iuslugaEl.textContent) : 1;
         const iuslugaDetailEl = document.getElementById("iuslugaDetail");
-        const iuslugaDetail = iuslugaDetailEl ? iuslugaDetailEl.textContent : "";
+        const iuslugaDetailHTML = iuslugaDetailEl ? iuslugaDetailEl.innerHTML : "";
+        // Detect whether indices were calculated (multi-year case)
+        const iuslugaHasIndices = iuslugaDetailHTML.includes("Расчёт:");
+        // For col 4: extract multiplication text from "Расчёт: ..." line
+        let iuslugaCol4 = "";
+        if (iuslugaDetailEl) {
+            if (iuslugaHasIndices) {
+                // Split by <br> and take the line with "Расчёт:"
+                const parts = iuslugaDetailHTML.split(/<br\s*\/?>/i);
+                const calcLine = parts.find(p => p.includes("Расчёт:")) || "";
+                iuslugaCol4 = calcLine.replace(/<[^>]+>/g, "").trim();
+            } else {
+                iuslugaCol4 = iuslugaDetailEl.textContent.trim();
+            }
+        }
+        // Format iuslugaVal: 2 decimals if within one year, 4 decimals if indices calculated
+        const iuslugaDecimals = iuslugaHasIndices ? 4 : 2;
+        const iuslugaValDisplay = parseFloat(iuslugaVal.toFixed(iuslugaDecimals));
 
         const kkonkurs = parseFloat(document.getElementById("kkonkursInput").value) || 1;
+        const kkonkursRounded = Math.round(kkonkurs * 100) / 100;
 
         const cpredlEl = document.getElementById("cpredlValue");
         const cpredl = cpredlEl ? parseFormatted(cpredlEl.textContent) : 0;
@@ -2736,8 +2754,8 @@
         setCell(r, 1, emptyBorder());
         setCell(r, 2, tblCell("Пункт 44 НЗТ 8.02.ИО.2023 в редакции Приказа МАиС от 17.07.2025 №89"));
         setCell(r, 3, emptyBorder());
-        setCell(r, 4, tblCell(iuslugaDetail));
-        setCell(r, 5, tblCell(iuslugaVal, { alignment: alignCC }));
+        setCell(r, 4, iuslugaCol4 ? tblCell(iuslugaCol4) : emptyBorder());
+        setCell(r, 5, tblCell(iuslugaValDisplay, { alignment: alignCC }));
         merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
         rows[r] = { hpt: 36 };
         r++;
@@ -2748,7 +2766,7 @@
         setCell(r, 2, tblCell("Пункт 44 НЗТ 8.02.ИО.2023"));
         setCell(r, 3, emptyBorder());
         setCell(r, 4, emptyBorder());
-        setCell(r, 5, tblCell(kkonkurs, { alignment: alignCC }));
+        setCell(r, 5, tblCell(kkonkursRounded, { alignment: alignCC }));
         merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
         rows[r] = { hpt: 30 };
         r++;
