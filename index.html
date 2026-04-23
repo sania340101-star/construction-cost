@@ -813,12 +813,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.26</div>
+        <div class="app-footer">Версия 2.27</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.26";
+    const APP_VERSION = "2.27";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -2715,7 +2715,7 @@
             setCell(r, 2, tblCell("Сборник норм затрат трудовых ресурсов НЗТ 8.02.ИО-2023 (таблица 1.1.)"));
             setCell(r, 3, emptyBorder());
             setCell(r, 4, hasInterp ? tblCell(nztFormula) : emptyBorder());
-            setCell(r, 5, tblCellBold(item.value));
+            setCell(r, 5, tblCellBold(item.value, { numFmt: "0.00" }));
             merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
             rows[r] = { hpt: 50 };
             r++;
@@ -2731,12 +2731,27 @@
                 rows[r] = { hpt: 18 };
                 r++;
             });
-            // Merge col 0 and col 5 vertically across main row + sub-rows
+            // Merge col 0, col 1 and col 5 vertically across main row + sub-rows
             if (hasInterp) {
                 merges.push({ s: {r:rowStart,c:0}, e: {r:r-1,c:0} });
+                merges.push({ s: {r:rowStart,c:1}, e: {r:r-1,c:1} });
                 merges.push({ s: {r:rowStart,c:5}, e: {r:r-1,c:5} });
             }
         });
+
+        // Sum row when multiple NZT items selected
+        if (nztItems.length > 1) {
+            const nztSum = nztItems.reduce(function(acc, item) { return acc + (item.value || 0); }, 0);
+            setCell(r, 0, tblCellBold("∑ НЗТ"));
+            setCell(r, 1, tblCellBold("чел-дн"));
+            setCell(r, 2, emptyBorder());
+            setCell(r, 3, emptyBorder());
+            setCell(r, 4, emptyBorder());
+            setCell(r, 5, tblCellBold(nztSum, { numFmt: "0.00" }));
+            merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
+            rows[r] = { hpt: 24 };
+            r++;
+        }
 
         // Суст
         setCell(r, 0, tblCellBold("Суст.норм-дн."));
