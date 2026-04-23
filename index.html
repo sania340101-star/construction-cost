@@ -813,12 +813,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.19</div>
+        <div class="app-footer">Версия 2.20</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.19";
+    const APP_VERSION = "2.20";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -1955,29 +1955,25 @@
         const dateStr = `${MONTHS_RU[month]} ${year}`;
         const operation = isBefore ? "умножение" : "деление";
 
+        const dateFormatted = "01." + String(month).padStart(2, "0") + "." + year;
         document.getElementById("costLabel").textContent =
-            `Стоимость на ${dateStr} г.`;
+            `Сметная стоимость строительства на ${dateFormatted}`;
         document.getElementById("costValue").textContent =
-            `${fmt(cost)} тыс. руб.`;
+            `${fmt(cost, 3)} тыс. руб.`;
 
         if (indices.length === 0) {
             document.getElementById("indexLabel").textContent =
-                "Фактический индекс";
+                "Фактический индекс изменения стоимости СМР к ценам 01.01.2025";
             document.getElementById("indexValue").textContent =
                 "Пересчёт не требуется (смета на 01.01.2025)";
             document.getElementById("indexDetail").textContent = "";
         } else {
-            const direction = isBefore
-                ? `с ${dateStr} на 01.01.2025`
-                : `с 01.01.2025 на ${dateStr}`;
             document.getElementById("indexLabel").textContent =
-                `Фактический индекс изменения стоимости ${direction}`;
-
+                "Фактический индекс изменения стоимости СМР к ценам 01.01.2025";
             document.getElementById("indexValue").textContent =
                 factIndex.toFixed(6);
             document.getElementById("indexDetail").textContent =
-                indexKeys.map(k => `${k.label}: ${k.value}%`).join(" x ") +
-                ` = ${factIndex.toFixed(6)} (${operation})`;
+                indexKeys.map(k => fmt(k.value / 100, 3)).join("*");
         }
 
         document.getElementById("finalLabel").textContent =
@@ -2545,10 +2541,10 @@
             resultEls.forEach(el => {
                 const titleEl = el.querySelector(".nzt-result-title");
                 const valEl = el.querySelector(".nzt-result-value");
-                const detailEl = el.querySelector(".nzt-result-detail");
+                const detailEls = el.querySelectorAll(".nzt-result-detail");
                 if (titleEl && titleEl.textContent.includes("НЗТ " + nztId) && valEl) {
                     nztVal = parseFormatted(valEl.textContent);
-                    nztDetail = detailEl ? detailEl.textContent : "";
+                    nztDetail = Array.from(detailEls).map(d => d.textContent).join("\n");
                 }
             });
             nztItems.push({ id: nztId, label: label.replace(/^НЗТ\s*\d+\.\d+\s*[-–—]\s*/, ""), value: nztVal, detail: nztDetail });
@@ -2636,7 +2632,7 @@
         setCell(r, 2, tblCell(costLabel));
         setCell(r, 3, emptyBorder());
         setCell(r, 4, emptyBorder());
-        setCell(r, 5, tblCell(smrCost, { alignment: alignCC }));
+        setCell(r, 5, { v: smrCost, t: "n", s: { font: fontTbl, border: borderAll, alignment: alignCC, numFmt: "0.000" } });
         merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
         rows[r] = { hpt: 36 };
         r++;
@@ -2647,7 +2643,7 @@
         setCell(r, 2, tblCell(indexLabel));
         setCell(r, 3, emptyBorder());
         setCell(r, 4, tblCell(indexDetail));
-        setCell(r, 5, tblCell(factIndex, { alignment: alignCC }));
+        setCell(r, 5, { v: factIndex, t: "n", s: { font: fontTbl, border: borderAll, alignment: alignCC, numFmt: "0.0000" } });
         merges.push({ s: {r:r,c:2}, e: {r:r,c:3} });
         rows[r] = { hpt: 57 };
         r++;
