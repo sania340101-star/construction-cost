@@ -1,0 +1,11 @@
+node_modules/
+test-results/
+results/
+downloads/
+output/
+.chat-history/
+.claude/
+.memory/
+.tmp-*
+.retrieval-session.json
+BEHAVIOR.md
