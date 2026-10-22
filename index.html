@@ -1831,7 +1831,7 @@
                     }
                     if (complexItem) break;
                 }
-                if (!complexItem) continue;
+                if (!complexItem) return;
                 const selEl = document.getElementById("nzt_" + nztId.replace(".", "_") + "_classSelect");
                 const selectedClass = selEl ? selEl.value : complexItem.complexTable[0].classLabel;
                 const row = complexItem.complexTable.find(r => r.classLabel === selectedClass) || complexItem.complexTable[0];
