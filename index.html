@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
     <title>Предельная стоимость строительства</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -662,7 +664,7 @@
                     <option value="7">Июль</option>
                     <option value="8">Август</option>
                     <option value="9">Сентябрь</option>
-                    <option value="10" selected>Октябрь</option>
+                    <option value="10">Октябрь</option>
                     <option value="11">Ноябрь</option>
                     <option value="12">Декабрь</option>
                 </select>
@@ -813,12 +815,12 @@
         </div>
     </div>
         </div><!-- /app-body -->
-        <div class="app-footer">Версия 2.27</div>
+        <div class="app-footer">Версия 2.28</div>
     </div><!-- /app -->
 
     <script>
     // ========== Authentication (Firebase) ==========
-    const APP_VERSION = "2.27";
+    const APP_VERSION = "2.28";
 
     const firebaseConfig = {
         apiKey: "AIzaSyAWfrDiqnBA8hQafCuPCeqUCeiNtiquNQ8",
@@ -1349,16 +1351,20 @@
     // Global state
     let currentHor = 0; // Хоб in thousands of rubles
 
-    // Populate year selector
+    // Populate year selector (auto-select current year)
     const yearSel = document.getElementById("year");
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
     const years = [...new Set(Object.keys(SMR).map(k => parseInt(k.split("-")[0])))].sort((a, b) => b - a);
     years.forEach(y => {
         const opt = document.createElement("option");
         opt.value = y;
         opt.textContent = y;
-        if (y === 2024) opt.selected = true;
+        if (y === currentYear) opt.selected = true;
         yearSel.appendChild(opt);
     });
+    // Auto-select current month
+    document.getElementById("month").value = String(currentMonth);
 
     // Format number with spaces as thousand separator
     function fmt(n, decimals) {
