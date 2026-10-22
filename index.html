@@ -1075,6 +1075,26 @@
         {id: "И030405a", maxCost: Infinity, nzt: 6.0},
     ];
 
+    // Таблица 3.5 — НЗТ 3.1 (получение земельного участка) по классу сложности
+    // Источник: НЗТ 8.02.И0-2023, Приложение 3, Таблица 3.5
+    const TABLE_3_5 = [
+        {id: "И030501а", classLabel: "К-5", nzt: 4.2},
+        {id: "И030502а", classLabel: "К-4", nzt: 5.0},
+        {id: "И030503а", classLabel: "К-3", nzt: 6.0},
+        {id: "И030504а", classLabel: "К-2", nzt: 8.0},
+        {id: "И030505а", classLabel: "К-1", nzt: 11.0},
+    ];
+
+    // Таблица 3.6 — НЗТ 3.2 (получение и анализ разрешительной документации) по классу сложности
+    // Источник: НЗТ 8.02.И0-2023, Приложение 3, Таблица 3.6
+    const TABLE_3_6 = [
+        {id: "И030601а", classLabel: "К-5", nzt: 3.0},
+        {id: "И030602а", classLabel: "К-4", nzt: 3.5},
+        {id: "И030603а", classLabel: "К-3", nzt: 4.5},
+        {id: "И030604а", classLabel: "К-2", nzt: 6.0},
+        {id: "И030605а", classLabel: "К-1", nzt: 9.0},
+    ];
+
     // Mapping: which table to use for each НЗТ function
     const NZT_TABLE_MAP = {
         "6.1": TABLE_3_1, "6.3": TABLE_3_1, "6.4": TABLE_3_1,
@@ -1255,8 +1275,8 @@
         {
             group: "3. Услуги по получению земельного участка и разрешительной документации:",
             items: [
-                {id: "3.1", label: "Организация процедуры получения земельного участка", type: "simple"},
-                {id: "3.2", label: "Организация получения и анализа разрешительной документации", type: "simple"},
+                {id: "3.1", label: "Организация процедуры получения земельного участка", type: "complexity_class", complexTable: TABLE_3_5, tableLabel: "Табл. 3.5"},
+                {id: "3.2", label: "Организация получения и анализа разрешительной документации", type: "complexity_class", complexTable: TABLE_3_6, tableLabel: "Табл. 3.6"},
             ]
         },
         {
@@ -1403,6 +1423,44 @@
                 itemDiv.appendChild(cb);
                 itemDiv.appendChild(lbl);
                 groupDiv.appendChild(itemDiv);
+
+                // Add complexity class selector for 3.1 and 3.2
+                if (item.type === "complexity_class") {
+                    const selectDiv = document.createElement("div");
+                    selectDiv.className = "nzt-subfunctions";
+                    selectDiv.id = "nzt_" + item.id.replace(".", "_") + "_class";
+                    selectDiv.style.display = "none";
+
+                    const selectLabel = document.createElement("label");
+                    selectLabel.textContent = "Класс сложности объекта:";
+                    selectLabel.style.fontSize = "13px";
+                    selectLabel.style.fontWeight = "600";
+                    selectLabel.style.marginBottom = "4px";
+                    selectLabel.style.display = "block";
+
+                    const sel = document.createElement("select");
+                    sel.id = "nzt_" + item.id.replace(".", "_") + "_classSelect";
+                    sel.style.marginLeft = "0";
+                    sel.style.fontSize = "13px";
+                    sel.style.padding = "4px 8px";
+                    sel.style.borderRadius = "4px";
+                    sel.style.border = "1px solid #ccc";
+                    item.complexTable.forEach(row => {
+                        const opt = document.createElement("option");
+                        opt.value = row.classLabel;
+                        opt.textContent = row.classLabel + " (" + row.id + ") — " + row.nzt + " чел.дн.";
+                        sel.appendChild(opt);
+                    });
+                    sel.addEventListener("change", calculateNzt);
+
+                    selectDiv.appendChild(selectLabel);
+                    selectDiv.appendChild(sel);
+                    groupDiv.appendChild(selectDiv);
+
+                    cb.addEventListener("change", function() {
+                        selectDiv.style.display = this.checked ? "block" : "none";
+                    });
+                }
 
                 // Add sub-functions for 9.1
                 if (item.type === "complex" && item.id === "9.1") {
@@ -1763,6 +1821,28 @@
                     '<div class="nzt-result-value">НЗТ ' + nztId + ' = ' + fmt(result.nzt, 2) + ' чел.дн.</div>';
                 listDiv.appendChild(item);
                 totalNzt += result.nzt;
+                hasResults = true;
+            } else if (nztType === "complexity_class") {
+                // Find the item definition to get the table
+                let complexItem = null;
+                for (const g of NZT_FUNCTIONS) {
+                    for (const it of g.items) {
+                        if (it.id === nztId) { complexItem = it; break; }
+                    }
+                    if (complexItem) break;
+                }
+                if (!complexItem) continue;
+                const selEl = document.getElementById("nzt_" + nztId.replace(".", "_") + "_classSelect");
+                const selectedClass = selEl ? selEl.value : complexItem.complexTable[0].classLabel;
+                const row = complexItem.complexTable.find(r => r.classLabel === selectedClass) || complexItem.complexTable[0];
+                const item = document.createElement("div");
+                item.className = "nzt-result-item";
+                item.innerHTML =
+                    '<div class="nzt-result-title">НЗТ ' + nztId + ' — ' + complexItem.tableLabel + '</div>' +
+                    '<div class="nzt-result-detail">' + row.id + ': ' + selectedClass + ' — ' + row.nzt + ' чел.дн. на одну процедуру</div>' +
+                    '<div class="nzt-result-value">НЗТ ' + nztId + ' = ' + fmt(row.nzt, 2) + ' чел.дн.</div>';
+                listDiv.appendChild(item);
+                totalNzt += row.nzt;
                 hasResults = true;
             } else if (nztType === "simple") {
                 const table = NZT_TABLE_MAP[nztId] || TABLE_3_2;
@@ -2240,8 +2320,8 @@
         },
         "2026": {
             1: 1.0119, 2: 1.0119, 3: 1.0119, 4: 1.0119,
-            5: 1.0119, 6: 1.0119, 7: 1.0119, 8: 1.0119,
-            9: 1.0119, 10: 1.0119, 11: 1.0119, 12: 1.0119,
+            5: 1.0119, 6: 1.0119, 7: 1.0119, 8: 1.001,
+            9: 1.019, 10: 1.0119, 11: 1.0119, 12: 1.0119,
         },
         "2027": {
             1: 1.0115, 2: 1.0115, 3: 1.0115, 4: 1.0115,
